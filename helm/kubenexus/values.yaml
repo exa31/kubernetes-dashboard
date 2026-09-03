@@ -1,0 +1,127 @@
+# Default values for kubenexus Helm chart.
+# This is a YAML-formatted file.
+
+# Global application settings
+global:
+  nameOverride: ""
+  fullnameOverride: ""
+
+# Backend Go Fiber API Service
+backend:
+  replicaCount: 1
+  image:
+    repository: kubenexus-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3001
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  env:
+    APP_ENV: production
+    APP_PORT: "3001"
+    K8S_IN_CLUSTER: "true"
+
+# Frontend Vue 3 + Nginx Service
+frontend:
+  replicaCount: 1
+  image:
+    repository: kubenexus-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+# Kubernetes RBAC Configuration (Required for client-go in-cluster cluster control)
+rbac:
+  create: true
+  serviceAccountName: ""
+  # ClusterRole permissions: full cluster observability and management
+  clusterRole:
+    create: true
+
+# Ingress Controller Configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/websocket-services: "kubenexus-backend"
+  hosts:
+    - host: kubenexus.local
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: backend
+        - path: /
+          pathType: Prefix
+          service: frontend
+  tls: []
+  # - secretName: kubenexus-tls
+  #   hosts:
+  #     - kubenexus.local
+
+# Security & JWT Tokens
+jwt:
+  secret: "kubenexus-ultra-secure-jwt-signing-secret-key-32chars"
+  accessDuration: "15m"
+  refreshDuration: "168h"
+
+# Database Configuration (External or Built-in)
+database:
+  host: ""          # If empty and postgresql.enabled=true, auto-resolves to built-in postgres
+  port: 5432
+  name: kubenexus_db
+  user: postgres
+  password: "kubenexus_db_password_123"
+  sslmode: disable
+
+# Redis Configuration (External or Built-in)
+redis:
+  host: ""          # If empty and redisInternal.enabled=true, auto-resolves to built-in redis
+  port: 6379
+  password: ""
+
+# Built-in lightweight PostgreSQL (for easy 1-click deployment)
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: 17-alpine
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+
+# Built-in lightweight Redis (for easy 1-click token caching)
+redisInternal:
+  enabled: true
+  image:
+    repository: redis
+    tag: 7-alpine
+  persistence:
+    enabled: false
+
+# Automated Database Migration Job (Helm hook pre-install & pre-upgrade)
+migration:
+  enabled: true
+  image:
+    repository: kubenexus-migrate
+    tag: latest
+    pullPolicy: IfNotPresent

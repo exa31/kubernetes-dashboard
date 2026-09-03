@@ -1,0 +1,14 @@
+apiVersion: v2
+name: kubenexus
+description: KubeNexus - Enterprise Cloud-Native Kubernetes Orchestration & Observability Control Plane
+type: application
+version: 0.1.0
+appVersion: "2.0.0"
+keywords:
+  - kubernetes
+  - dashboard
+  - observability
+  - orchestration
+  - rbac
+maintainers:
+  - name: KubeNexus Team

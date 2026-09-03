@@ -1,0 +1,43 @@
+<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="kn-fav-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="50%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#7c3aed" />
+    </linearGradient>
+    <linearGradient id="kn-fav-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#c084fc" />
+    </linearGradient>
+    <radialGradient id="kn-fav-core" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#059669" />
+    </radialGradient>
+  </defs>
+
+  <!-- Outer Hexagon Shield -->
+  <path
+    d="M24 3 L42 13.5 L42 34.5 L24 45 L6 34.5 L6 13.5 Z"
+    fill="url(#kn-fav-bg)"
+    stroke="url(#kn-fav-glow)"
+    stroke-width="2"
+    stroke-linejoin="round"
+  />
+
+  <!-- Inner Isometric Node Box -->
+  <polygon points="24,11 35,17.5 24,24 13,17.5" fill="#ffffff" fill-opacity="0.25" />
+  <polygon points="13,17.5 24,24 24,36.5 13,30" fill="#000000" fill-opacity="0.25" />
+  <polygon points="24,24 35,17.5 35,30 24,36.5" fill="#ffffff" fill-opacity="0.12" />
+
+  <!-- Satellite Cluster Nodes -->
+  <circle cx="24" cy="11" r="2.2" fill="#38bdf8" stroke="#ffffff" stroke-width="1" />
+  <circle cx="35" cy="17.5" r="2.2" fill="#818cf8" stroke="#ffffff" stroke-width="1" />
+  <circle cx="35" cy="30" r="2.2" fill="#c084fc" stroke="#ffffff" stroke-width="1" />
+  <circle cx="24" cy="36.5" r="2.2" fill="#34d399" stroke="#ffffff" stroke-width="1" />
+  <circle cx="13" cy="30" r="2.2" fill="#38bdf8" stroke="#ffffff" stroke-width="1" />
+  <circle cx="13" cy="17.5" r="2.2" fill="#818cf8" stroke="#ffffff" stroke-width="1" />
+
+  <!-- Center Active Nexus Quantum Core -->
+  <circle cx="24" cy="24" r="4.2" fill="url(#kn-fav-core)" stroke="#ffffff" stroke-width="1.5" />
+  <circle cx="24" cy="24" r="1.6" fill="#ffffff" />
+</svg>

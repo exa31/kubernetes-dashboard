@@ -1,0 +1,53 @@
+{{- if .Values.redisInternal.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kubenexus.fullname" . }}-redis
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubenexus.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "kubenexus.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: redis
+  template:
+    metadata:
+      labels:
+        {{- include "kubenexus.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: redis
+    spec:
+      containers:
+        - name: redis
+          image: "{{ .Values.redisInternal.image.repository }}:{{ .Values.redisInternal.image.tag }}"
+          ports:
+            - containerPort: 6379
+              name: redis
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 25m
+              memory: 32Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kubenexus.fullname" . }}-redis
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubenexus.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6379
+      targetPort: 6379
+      name: redis
+  selector:
+    {{- include "kubenexus.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+{{- end }}

@@ -1,0 +1,93 @@
+{{- if .Values.rbac.create -}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "kubenexus.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubenexus.labels" . | nindent 4 }}
+---
+{{- if .Values.rbac.clusterRole.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kubenexus.fullname" . }}-cluster-role
+  labels:
+    {{- include "kubenexus.labels" . | nindent 4 }}
+rules:
+  # Core API resources
+  - apiGroups: [""]
+    resources:
+      - namespaces
+      - nodes
+      - pods
+      - pods/log
+      - pods/status
+      - services
+      - endpoints
+      - configmaps
+      - secrets
+      - persistentvolumes
+      - persistentvolumeclaims
+      - resourcequotas
+      - events
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Interactive Container Terminal (Exec)
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create", "get"]
+
+  # Workloads API (Apps)
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - deployments/scale
+      - deployments/status
+      - statefulsets
+      - statefulsets/scale
+      - statefulsets/status
+      - daemonsets
+      - daemonsets/status
+      - replicasets
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Batch API (CronJobs & Jobs)
+  - apiGroups: ["batch"]
+    resources:
+      - cronjobs
+      - cronjobs/status
+      - jobs
+      - jobs/status
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Networking API (Ingresses)
+  - apiGroups: ["networking.k8s.io"]
+    resources:
+      - ingresses
+      - ingressclasses
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Metrics API (Metrics Server)
+  - apiGroups: ["metrics.k8s.io"]
+    resources:
+      - pods
+      - nodes
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "kubenexus.fullname" . }}-cluster-rolebinding
+  labels:
+    {{- include "kubenexus.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kubenexus.fullname" . }}-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kubenexus.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}
+{{- end }}

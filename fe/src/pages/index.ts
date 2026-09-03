@@ -1,0 +1,7 @@
+export { default as ConfigMapsPage } from './ConfigMapsPage.vue'
+export { default as Dashboard } from './Dashboard.vue'
+export { default as Login } from './Login.vue'
+export { default as NotFound } from './NotFound.vue'
+export { default as SecretsPage } from './SecretsPage.vue'
+export { default as Users } from './Users.vue'
+export { default as WorkloadsPage } from './WorkloadsPage.vue'

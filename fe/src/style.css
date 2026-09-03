@@ -1,0 +1,258 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary: #0284c7; /* Sky 600 - Kubernetes / Cloud vibrant blue */
+  --color-primary-dark: #0369a1;
+  --color-surface-50: #f8fafc;
+  --color-surface-900: #0f172a;
+}
+
+/* Base styles */
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+}
+
+/* ==========================================================================
+   PrimeVue 4 Modern Custom Design System Integration
+   Smooth rounded curves, translucent borders, harmonized light & dark modes.
+   ========================================================================== */
+
+/* Modern DataTable Card Container */
+.p-datatable {
+  @apply rounded-xl overflow-hidden transition-colors;
+}
+
+.p-datatable-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+
+/* Header Cells (th) */
+.p-datatable-thead > tr > th {
+  @apply text-xs font-semibold uppercase tracking-wider py-3.5 px-5 transition-colors border-b select-none;
+  @apply bg-slate-100/90 text-slate-600 border-slate-200;
+  @apply dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800;
+}
+
+.p-datatable-thead > tr > th:first-child {
+  border-top-left-radius: 0.75rem;
+}
+
+.p-datatable-thead > tr > th:last-child {
+  border-top-right-radius: 0.75rem;
+}
+
+/* Body Cells (td) */
+.p-datatable-tbody > tr > td {
+  @apply text-sm py-3.5 px-5 border-b transition-colors;
+  @apply border-slate-100 text-slate-800;
+  @apply dark:border-slate-800/60 dark:text-slate-200;
+}
+
+/* Table Row Backgrounds & Striped styling */
+.p-datatable-tbody > tr {
+  @apply bg-white dark:bg-slate-950 transition-colors;
+}
+
+.p-datatable-striped .p-datatable-tbody > tr:nth-child(even) {
+  @apply bg-slate-50/60 dark:bg-slate-900/40;
+}
+
+/* Hover effect */
+.p-datatable-hoverable .p-datatable-tbody > tr:hover,
+.p-datatable-tbody > tr:hover {
+  background-color: rgba(99, 102, 241, 0.08) !important;
+}
+
+.dark .p-datatable-hoverable .p-datatable-tbody > tr:hover,
+.dark .p-datatable-tbody > tr:hover {
+  background-color: rgba(30, 41, 59, 0.7) !important;
+}
+
+/* Sorting icons */
+.p-datatable .p-sortable-column-icon {
+  @apply text-xs ml-1.5 opacity-50 transition-opacity;
+}
+
+.p-datatable .p-sortable-column:hover .p-sortable-column-icon {
+  @apply opacity-100 text-sky-500;
+}
+
+/* Paginator */
+.p-paginator {
+  @apply flex items-center justify-between px-4 py-3 border-t text-xs transition-colors rounded-b-xl;
+  @apply bg-slate-50/80 border-slate-200 text-slate-500;
+  @apply dark:bg-slate-900/90 dark:border-slate-800 dark:text-slate-400;
+}
+
+.p-paginator .p-paginator-pages .p-paginator-page,
+.p-paginator .p-paginator-first,
+.p-paginator .p-paginator-prev,
+.p-paginator .p-paginator-next,
+.p-paginator .p-paginator-last {
+  @apply min-w-[2rem] h-8 rounded-lg text-xs font-semibold flex items-center justify-center transition-all cursor-pointer;
+  @apply text-slate-600 hover:bg-slate-200/70;
+  @apply dark:text-slate-300 dark:hover:bg-slate-800;
+}
+
+.p-paginator .p-paginator-pages .p-paginator-page.p-paginator-page-selected {
+  @apply bg-sky-600 text-white font-bold shadow-sm;
+}
+
+.p-paginator .p-select,
+.p-paginator select {
+  @apply text-xs rounded-lg py-1 px-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200;
+}
+
+/* PrimeVue Dialog styling */
+.p-dialog {
+  @apply rounded-2xl border shadow-2xl overflow-hidden backdrop-blur-md;
+  @apply bg-white border-slate-200 text-slate-900;
+  @apply dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100;
+}
+
+.p-dialog-mask {
+  @apply bg-slate-950/60 backdrop-blur-xs;
+}
+
+.p-dialog-header {
+  @apply p-4 border-b flex items-center justify-between;
+  @apply bg-slate-50/80 border-slate-200;
+  @apply dark:bg-slate-900/90 dark:border-slate-800;
+}
+
+.p-dialog-content {
+  @apply p-6 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200;
+}
+
+/* Select & Dropdown styling */
+.p-select {
+  @apply rounded-lg text-sm border transition-all;
+  @apply bg-white border-slate-200 text-slate-800;
+  @apply dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100;
+}
+
+.p-select:hover {
+  @apply border-sky-400 dark:border-sky-500;
+}
+
+.p-select-overlay {
+  @apply rounded-xl border shadow-xl overflow-hidden py-1;
+  @apply bg-white border-slate-200 text-slate-800;
+  @apply dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200;
+}
+
+.p-select-option {
+  @apply px-3 py-2 text-sm transition-colors cursor-pointer;
+  @apply text-slate-700 hover:bg-sky-50 hover:text-sky-600;
+  @apply dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-sky-400;
+}
+
+.p-select-option.p-select-option-selected {
+  @apply bg-sky-50 font-semibold text-sky-600;
+  @apply dark:bg-sky-950/50 dark:text-sky-400;
+}
+
+/* InputText & InputNumber */
+.p-inputtext {
+  @apply rounded-lg text-sm px-3 py-2 border transition-all;
+  @apply bg-white border-slate-200 text-slate-900 placeholder-slate-400;
+  @apply dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500;
+}
+
+.p-inputtext:focus {
+  @apply outline-none ring-2 ring-sky-500/30 border-sky-500;
+}
+
+/* Tags */
+.p-tag {
+  @apply rounded-md font-mono text-xs px-2.5 py-0.5 font-medium inline-flex items-center gap-1;
+}
+
+/* ==========================================================================
+   Vibrant Semantic Action Buttons (Color-coded & Dark/Light mode optimized)
+   Overrides default PrimeVue monochromatic styling.
+   ========================================================================== */
+.btn-emerald,
+.p-button.btn-emerald {
+  background-color: #059669 !important;
+  border-color: #059669 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+.btn-emerald:hover,
+.p-button.btn-emerald:hover {
+  background-color: #10b981 !important;
+  border-color: #10b981 !important;
+}
+
+.btn-blue,
+.p-button.btn-blue {
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+.btn-blue:hover,
+.p-button.btn-blue:hover {
+  background-color: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+}
+
+.btn-sky,
+.p-button.btn-sky {
+  background-color: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+.btn-sky:hover,
+.p-button.btn-sky:hover {
+  background-color: #0ea5e9 !important;
+  border-color: #0ea5e9 !important;
+}
+
+.btn-amber,
+.p-button.btn-amber {
+  background-color: #f59e0b !important;
+  border-color: #f59e0b !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+.btn-amber:hover,
+.p-button.btn-amber:hover {
+  background-color: #fbbf24 !important;
+  border-color: #fbbf24 !important;
+}
+
+.btn-rose,
+.p-button.btn-rose {
+  background-color: #e11d48 !important;
+  border-color: #e11d48 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+.btn-rose:hover,
+.p-button.btn-rose:hover {
+  background-color: #f43f5e !important;
+  border-color: #f43f5e !important;
+}
+
+.btn-dark-subtle,
+.p-button.btn-dark-subtle {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #cbd5e1 !important;
+}
+.btn-dark-subtle:hover,
+.p-button.btn-dark-subtle:hover {
+  background-color: #334155 !important;
+  color: #f8fafc !important;
+}
