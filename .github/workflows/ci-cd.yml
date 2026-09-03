@@ -1,0 +1,203 @@
+name: KubeNexus Monorepo CI/CD
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*.*.*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository }}
+
+jobs:
+  # ==========================================
+  # 1. QUALITY ASSURANCE & UNIT TESTS
+  # ==========================================
+  test-backend:
+    name: Backend Lint & Test (Go 1.25)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./be
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go 1.25
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache-dependency-path: be/go.sum
+
+      - name: Download Go Dependencies
+        run: go mod download
+
+      - name: Run Backend Tests
+        run: go test -v -race -cover ./...
+
+  test-frontend:
+    name: Frontend Lint & Build (Vue 3 / Vite)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./fe
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: fe/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Type Check & Build Production Bundle
+        run: npm run build
+
+  lint-helm:
+    name: Helm Chart Lint & Dry-Run
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.17.0
+
+      - name: Lint Helm Chart
+        run: helm lint ./helm/kubenexus
+
+      - name: Template Render Dry-Run
+        run: helm template test-release ./helm/kubenexus
+
+  # ==========================================
+  # 2. BUILD & PUSH DOCKER IMAGES (CLOUD CD)
+  # ==========================================
+  build-and-push:
+    name: Build & Push Images to GHCR
+    needs: [ test-backend, test-frontend, lint-helm ]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Compute image tags (latest + commit SHA + git tag if available)
+      - name: Extract Metadata (Backend)
+        id: meta-be
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/backend
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+            type=ref,event=tag
+
+      - name: Extract Metadata (Frontend)
+        id: meta-fe
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+            type=ref,event=tag
+
+      - name: Extract Metadata (Migration)
+        id: meta-migrate
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/migrate
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+            type=ref,event=tag
+
+      # Build and push Backend Image
+      - name: Build & Push Backend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./be
+          file: ./be/Dockerfile
+          push: true
+          tags: ${{ steps.meta-be.outputs.tags }}
+          labels: ${{ steps.meta-be.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Build and push Frontend Image
+      - name: Build & Push Frontend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./fe
+          file: ./fe/Dockerfile
+          push: true
+          tags: ${{ steps.meta-fe.outputs.tags }}
+          labels: ${{ steps.meta-fe.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Build and push Migration Image
+      - name: Build & Push Migration Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./be
+          file: ./be/Dockerfile.migrate
+          push: true
+          tags: ${{ steps.meta-migrate.outputs.tags }}
+          labels: ${{ steps.meta-migrate.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ==========================================
+  # 3. OPTIONAL KUBERNETES AUTO-DEPLOY (CD)
+  # ==========================================
+  deploy-kubernetes:
+    name: Continuous Deployment to Kubernetes
+    needs: [ build-and-push ]
+    if: false # Diaktifkan ketika user menambahkan Secret KUBECONFIG di repository Settings -> Secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Deploy to Kubernetes via Helm
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG }}
+        run: |
+          mkdir -p ~/.kube
+          echo "$KUBECONFIG_DATA" | base64 -d > ~/.kube/config
+          helm upgrade --install kubenexus ./helm/kubenexus \
+            --namespace kubenexus --create-namespace \
+            --set backend.image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/backend \
+            --set backend.image.tag=sha-${{ github.sha }} \
+            --set frontend.image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend \
+            --set frontend.image.tag=sha-${{ github.sha }} \
+            --set migration.image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/migrate \
+            --set migration.image.tag=sha-${{ github.sha }}

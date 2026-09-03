@@ -79,7 +79,9 @@ ingress:
 
 # Security & JWT Tokens
 jwt:
-  secret: "kubenexus-ultra-secure-jwt-signing-secret-key-32chars"
+  # Leave empty ("") to automatically generate a secure random 32-character secret key.
+  # The generated key will persist across future Helm upgrades via lookup.
+  secret: ""
   accessDuration: "15m"
   refreshDuration: "168h"
 
@@ -89,7 +91,9 @@ database:
   port: 5432
   name: kubenexus_db
   user: postgres
-  password: "kubenexus_db_password_123"
+  # Leave empty ("") to automatically generate a secure random 24-character password.
+  # The generated password will persist across future Helm upgrades via lookup.
+  password: ""
   sslmode: disable
 
 # Redis Configuration (External or Built-in)

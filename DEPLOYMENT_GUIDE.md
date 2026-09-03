@@ -123,5 +123,43 @@ Semua konfigurasi dapat diubah melalui file [values.yaml](file:///d:/Project/das
 | `ingress.hosts[0].host` | `kubenexus.local` | Domain akses dashboard |
 | `postgresql.enabled` | `true` | Gunakan Postgres internal (set `false` jika pakai RDS luar) |
 | `database.host` | `""` | Host Postgres eksternal jika `postgresql.enabled=false` |
+| `database.password` | `""` | Kosongkan untuk **auto-generate password aman (24 karakter)** |
 | `redisInternal.enabled`| `true` | Gunakan Redis internal (set `false` jika pakai Redis luar) |
-| `jwt.secret` | `...` | Secret key penandatanganan token JWT |
+| `jwt.secret` | `""` | Kosongkan untuk **auto-generate signing key aman (32 karakter)** |
+
+---
+
+## 6. Fitur Auto-Generated Secrets (Otomatis & Aman)
+
+Anda **tidak perlu lagi mengisi password atau secret JWT secara manual** di `values.yaml`.
+Jika dibiarkan kosong (`""`), Helm akan otomatis:
+1. Menghasilkan string acak berkekuatan kriptografis tinggi:
+   - `JWT_SECRET`: 32 karakter alfanumerik acak
+   - `DB_PASSWORD`: 24 karakter alfanumerik acak
+2. **Persistence across Upgrades**: Melalui fungsi `lookup`, Helm mendeteksi Secret yang sudah ada di cluster sehingga secret **tidak akan berubah** saat Anda menjalankan `helm upgrade`.
+
+---
+
+## 7. Cloud CI/CD Pipeline (Build Tanpa Komputer Lokal)
+
+Jika Anda tidak ingin membebani laptop/komputer lokal untuk membuild Docker image, Anda cukup melakukan `git push` ke GitHub atau GitLab!
+
+### Menggunakan GitHub Actions (`.github/workflows/ci-cd.yml`):
+1. Push repository monorepo Anda ke GitHub:
+   ```bash
+   git remote add origin https://github.com/<username>/<repo-name>.git
+   git push -u origin master
+   ```
+2. GitHub Actions akan otomatis:
+   - Menjalankan unit test Backend (Go 1.25).
+   - Menjalankan build & type-check Frontend (Vue 3 + Vite).
+   - Melakukan linting Helm chart.
+   - **Membuild & mem-publish 3 image Docker ke GitHub Container Registry (`ghcr.io`)** secara gratis dan otomatis.
+3. Anda tinggal mendeploy ke cluster Kubernetes Anda menggunakan image dari cloud:
+   ```bash
+   helm upgrade --install kubenexus ./helm/kubenexus -n kubenexus --create-namespace \
+     --set backend.image.repository=ghcr.io/<username>/<repo-name>/backend \
+     --set frontend.image.repository=ghcr.io/<username>/<repo-name>/frontend \
+     --set migration.image.repository=ghcr.io/<username>/<repo-name>/migrate
+   ```
+
