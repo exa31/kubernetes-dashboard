@@ -45,9 +45,27 @@ dashboard-kubernetes/
 The recommended way to deploy KubeNexus is using the official **Helm Chart**.
 
 ### 1. Install KubeNexus via Helm
-Run the following command from the root of the repository:
+
+#### Option A: Direct Installation (Tanpa Perlu Clone Repo!)
+You can install KubeNexus directly from any terminal without cloning the repository:
 
 ```bash
+# Method 1: Using Helm OCI Registry (Helm 3.8+)
+helm upgrade --install kubenexus oci://ghcr.io/exa31/charts/kubenexus \
+  --version 0.1.0 \
+  --namespace kubenexus \
+  --create-namespace
+
+# Method 2: Using GitHub Release Package directly (.tgz)
+helm upgrade --install kubenexus https://github.com/exa31/kubernetes-dashboard/releases/download/v0.1.0/kubenexus-0.1.0.tgz \
+  --namespace kubenexus \
+  --create-namespace
+```
+
+#### Option B: From Cloned Repository (For Development / Custom Values)
+```bash
+git clone https://github.com/exa31/kubernetes-dashboard.git
+cd kubernetes-dashboard
 helm upgrade --install kubenexus ./helm/kubenexus \
   --namespace kubenexus \
   --create-namespace

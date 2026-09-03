@@ -171,6 +171,12 @@ jobs:
           path: dist-chart/*.tgz
           retention-days: 30
 
+      - name: Push Helm Chart to OCI Registry (GHCR)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.REGISTRY }} --username ${{ github.actor }} --password-stdin
+          helm push dist-chart/*.tgz oci://${{ env.REGISTRY }}/${{ github.repository_owner }}/charts
+
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2

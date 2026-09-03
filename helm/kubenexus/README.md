@@ -33,11 +33,25 @@ Before deploying KubeNexus, ensure you have:
 
 ## Quick Start Installation
 
-### 1. Deploy KubeNexus with Default Settings
-Run the following command to deploy KubeNexus in a dedicated `kubenexus` namespace:
+### 1. Deploy KubeNexus
 
+#### Option A: Direct Installation (Without Cloning Repository!)
 ```bash
-helm install kubenexus ./helm/kubenexus \
+# Method 1: Using Helm OCI Registry
+helm upgrade --install kubenexus oci://ghcr.io/exa31/charts/kubenexus \
+  --version 0.1.0 \
+  --namespace kubenexus \
+  --create-namespace
+
+# Method 2: Using GitHub Release Asset (.tgz)
+helm upgrade --install kubenexus https://github.com/exa31/kubernetes-dashboard/releases/download/v0.1.0/kubenexus-0.1.0.tgz \
+  --namespace kubenexus \
+  --create-namespace
+```
+
+#### Option B: From Cloned Chart Directory
+```bash
+helm upgrade --install kubenexus ./helm/kubenexus \
   --namespace kubenexus \
   --create-namespace
 ```
