@@ -84,13 +84,29 @@ jobs:
         run: helm template test-release ./helm/kubenexus
 
   # ==========================================
-  # 2. BUILD & PUSH DOCKER IMAGES (CLOUD CD)
+  # 2. BUILD & PUSH DOCKER IMAGES (PARALLEL MATRIX)
   # ==========================================
   build-and-push:
-    name: Build & Push Images to GHCR
+    name: Build & Push (${{ matrix.target.name }})
     needs: [ test-backend, test-frontend, lint-helm ]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - name: backend
+            context: ./be
+            dockerfile: ./be/Dockerfile
+            image: backend
+          - name: frontend
+            context: ./fe
+            dockerfile: ./fe/Dockerfile
+            image: frontend
+          - name: migrate
+            context: ./be
+            dockerfile: ./be/Dockerfile.migrate
+            image: migrate
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -105,72 +121,26 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Compute image tags (latest + commit SHA + git tag if available)
-      - name: Extract Metadata (Backend)
-        id: meta-be
+      - name: Extract Docker Metadata
+        id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/backend
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.target.image }}
           tags: |
             type=raw,value=latest
             type=sha,prefix=sha-,format=short
             type=ref,event=tag
 
-      - name: Extract Metadata (Frontend)
-        id: meta-fe
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend
-          tags: |
-            type=raw,value=latest
-            type=sha,prefix=sha-,format=short
-            type=ref,event=tag
-
-      - name: Extract Metadata (Migration)
-        id: meta-migrate
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/migrate
-          tags: |
-            type=raw,value=latest
-            type=sha,prefix=sha-,format=short
-            type=ref,event=tag
-
-      # Build and push Backend Image
-      - name: Build & Push Backend Docker Image
+      - name: Build & Push Image
         uses: docker/build-push-action@v5
         with:
-          context: ./be
-          file: ./be/Dockerfile
+          context: ${{ matrix.target.context }}
+          file: ${{ matrix.target.dockerfile }}
           push: true
-          tags: ${{ steps.meta-be.outputs.tags }}
-          labels: ${{ steps.meta-be.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # Build and push Frontend Image
-      - name: Build & Push Frontend Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./fe
-          file: ./fe/Dockerfile
-          push: true
-          tags: ${{ steps.meta-fe.outputs.tags }}
-          labels: ${{ steps.meta-fe.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # Build and push Migration Image
-      - name: Build & Push Migration Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./be
-          file: ./be/Dockerfile.migrate
-          push: true
-          tags: ${{ steps.meta-migrate.outputs.tags }}
-          labels: ${{ steps.meta-migrate.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.target.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.target.name }}
 
   # ==========================================
   # 3. PACKAGE HELM CHART ARTIFACT
