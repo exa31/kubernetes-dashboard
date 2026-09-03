@@ -54,17 +54,19 @@ rbac:
   clusterRole:
     create: true
 
-# Ingress Controller Configuration
+# Ingress Controller Configuration (Default: false, users configure own Ingress with cert-manager/Let's Encrypt)
 ingress:
-  enabled: true
+  enabled: false
   className: nginx
   annotations:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
     nginx.ingress.kubernetes.io/websocket-services: "kubenexus-backend"
+    # Cert-Manager / Let's Encrypt example annotation:
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
-    - host: kubenexus.local
+    - host: kubenexus.example.com
       paths:
         - path: /api
           pathType: Prefix
@@ -73,9 +75,9 @@ ingress:
           pathType: Prefix
           service: frontend
   tls: []
-  # - secretName: kubenexus-tls
+  # - secretName: kubenexus-tls-cert
   #   hosts:
-  #     - kubenexus.local
+  #     - kubenexus.example.com
 
 # Default Seed Administrator Account
 admin:

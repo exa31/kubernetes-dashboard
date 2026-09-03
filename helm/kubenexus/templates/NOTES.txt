@@ -14,12 +14,18 @@
 {{- if .Values.ingress.enabled }}
    {{- range .Values.ingress.hosts }}
    Ingress Host: http://{{ .host }}
-   (Ensure '{{ .host }}' points to your Ingress Controller IP in your hosts file)
+   (Ensure '{{ .host }}' points to your Ingress Controller IP)
    {{- end }}
 {{- else }}
-   Run port-forward to access dashboard locally:
-   kubectl port-forward svc/{{ include "kubenexus.fullname" . }}-frontend 8080:80 -n {{ .Release.Namespace }}
-   Then open: http://localhost:8080
+   a. Quick Local Access via Port-Forward:
+      kubectl port-forward svc/{{ include "kubenexus.fullname" . }}-frontend 8080:80 -n {{ .Release.Namespace }}
+      Then open: http://localhost:8080
+
+   b. Setup Custom Ingress (e.g. with Let's Encrypt & Cert-Manager):
+      See ready-to-use template: helm/kubenexus/examples/ingress-letsencrypt.yaml
+      Routing Targets:
+        - Frontend UI  : {{ include "kubenexus.fullname" . }}-frontend:80   (Path: /)
+        - Backend API : {{ include "kubenexus.fullname" . }}-backend:3001 (Path: /api)
 {{- end }}
 
 ========================================================================

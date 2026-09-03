@@ -61,25 +61,70 @@ kubectl get secret --namespace kubenexus kubenexus-secret \
 
 ## Accessing the Dashboard
 
-### Via Ingress (Recommended)
-1. Add the configured hostname (default: `kubenexus.local`) to your local hosts file:
-   - **Linux / macOS**: `/etc/hosts`
-   - **Windows**: `C:\Windows\System32\drivers\etc\hosts`
-   ```text
-   <INGRESS_CONTROLLER_IP_OR_127.0.0.1> kubenexus.local
-   ```
-2. Open your browser and navigate to:
-   ```
-   http://kubenexus.local
-   ```
+### 1. Custom Ingress with Let's Encrypt (Recommended for Production)
+By default, **Ingress is disabled (`ingress.enabled: false`)** so you can define your own Ingress resource with your custom domain and SSL/TLS certificates (e.g. via **Cert-Manager** & **Let's Encrypt**).
 
-### Via Port-Forwarding (Alternative / Development)
-If you don't have an Ingress Controller installed, you can access the frontend directly:
+A complete template is available at `helm/kubenexus/examples/ingress-letsencrypt.yaml`:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kubenexus-ingress
+  namespace: kubenexus
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "kubenexus-backend"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - dashboard.yourdomain.com
+      secretName: kubenexus-tls-cert
+  rules:
+    - host: dashboard.yourdomain.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: kubenexus-backend
+                port:
+                  number: 3001
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kubenexus-frontend
+                port:
+                  number: 80
+```
+
+Apply the file to your cluster:
+```bash
+kubectl apply -f helm/kubenexus/examples/ingress-letsencrypt.yaml
+```
+
+### 2. Via Port-Forwarding (For Local Testing)
+To test the dashboard immediately without an Ingress:
 
 ```bash
 kubectl port-forward svc/kubenexus-frontend 8080:80 -n kubenexus
 ```
 Then visit: `http://localhost:8080`
+
+### 3. Or Enable Chart-Managed Ingress
+If you prefer the Helm chart to manage the Ingress automatically, set `ingress.enabled: true`:
+
+```bash
+helm upgrade --install kubenexus ./helm/kubenexus -n kubenexus \
+  --set ingress.enabled=true \
+  --set ingress.hosts[0].host=kubenexus.yourdomain.com
+```
 
 ---
 

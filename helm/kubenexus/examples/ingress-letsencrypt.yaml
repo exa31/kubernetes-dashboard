@@ -1,0 +1,49 @@
+# Example: Custom Ingress with Let's Encrypt (Cert-Manager) for KubeNexus
+# Replace 'dashboard.yourdomain.com' with your actual domain name.
+# Replace 'letsencrypt-prod' with your Cert-Manager ClusterIssuer name.
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kubenexus-ingress
+  namespace: kubenexus
+  annotations:
+    # 1. Cert-Manager Let's Encrypt Automatic SSL
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    acme.cert-manager.io/http01-edit-in-place: "true"
+
+    # 2. Ingress NGINX Configuration
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+
+    # 3. Essential for Interactive Container Web Terminal & Live Logs Streaming
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "kubenexus-backend"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - dashboard.yourdomain.com
+      secretName: kubenexus-tls-cert
+  rules:
+    - host: dashboard.yourdomain.com
+      http:
+        paths:
+          # Arahkan endpoint API & WebSocket terminal ke Service Backend
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: kubenexus-backend
+                port:
+                  number: 3001
+
+          # Arahkan endpoint Frontend Dashboard UI ke Service Frontend
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kubenexus-frontend
+                port:
+                  number: 80

@@ -66,14 +66,23 @@ kubectl get secret --namespace kubenexus kubenexus-secret \
   -o jsonpath="{.data.ADMIN_PASSWORD}" | base64 -d && echo
 ```
 
-### 3. Access the Dashboard via Ingress
-1. Add the domain to your `hosts` file (`C:\Windows\System32\drivers\etc\hosts` or `/etc/hosts`):
-   ```text
-   127.0.0.1 kubenexus.local
-   ```
-2. Open your browser at: **`http://kubenexus.local`**
+### 3. Access the Dashboard
 
-*(For full parameter details, refer to the [Helm Chart Documentation](./helm/kubenexus/README.md).)*
+- **Option A: Custom Ingress with Let's Encrypt (Production)**
+  By default, Ingress is disabled (`ingress.enabled: false`) so you can connect your own domain & SSL.
+  A ready-to-use manifest with **Cert-Manager** is provided at [`helm/kubenexus/examples/ingress-letsencrypt.yaml`](./helm/kubenexus/examples/ingress-letsencrypt.yaml):
+  ```bash
+  # Edit your domain and apply:
+  kubectl apply -f helm/kubenexus/examples/ingress-letsencrypt.yaml
+  ```
+
+- **Option B: Quick Port-Forward (Development / Testing)**
+  ```bash
+  kubectl port-forward svc/kubenexus-frontend 8080:80 -n kubenexus
+  # Open: http://localhost:8080
+  ```
+
+*(For full parameter details and options, refer to the [Helm Chart Documentation](./helm/kubenexus/README.md).)*
 
 ---
 
