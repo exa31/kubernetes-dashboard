@@ -91,7 +91,7 @@ func TestHandlerCreateUserValidationError(t *testing.T) {
 
 func TestHandlerCreateUserSuccess(t *testing.T) {
 	app := testUserApp(newFakeRepo())
-	resp := doRequest(t, app, "POST", "/api/v1/users/", `{"name":"Bob","email":"bob@x.com","phone":"0812345678"}`)
+	resp := doRequest(t, app, "POST", "/api/v1/users/", `{"name":"Bob","email":"bob@x.com","password":"password123","role":"viewer","phone":"0812345678"}`)
 	if resp.StatusCode != http.StatusCreated {
 		payload := decodeResp(t, resp)
 		t.Fatalf("status = %d, want 201. payload: %#v", resp.StatusCode, payload)

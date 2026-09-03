@@ -85,6 +85,16 @@ func (f *fakeUserRepository) Update(id string, updates map[string]interface{}) (
 	return u, nil
 }
 
+func (f *fakeUserRepository) UpdatePassword(id string, hashedPassword string) error {
+	u, ok := f.users[id]
+	if !ok {
+		return sql.ErrNoRows
+	}
+	u.Password = hashedPassword
+	u.UpdatedAt = time.Now()
+	return nil
+}
+
 func (f *fakeUserRepository) Delete(id string) error {
 	u, ok := f.users[id]
 	if !ok {
