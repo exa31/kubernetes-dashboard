@@ -1,0 +1,25 @@
+========================================================================
+  🚀 KubeNexus Enterprise Kubernetes Orchestrator is Deployed!
+========================================================================
+
+1. 🔐 Get your initial Admin credentials (Auto-Generated):
+
+   Admin Email:
+   kubectl get secret --namespace {{ .Release.Namespace }} {{ include "kubenexus.fullname" . }}-secret -o jsonpath="{.data.ADMIN_EMAIL}" | base64 -d && echo
+
+   Admin Password:
+   kubectl get secret --namespace {{ .Release.Namespace }} {{ include "kubenexus.fullname" . }}-secret -o jsonpath="{.data.ADMIN_PASSWORD}" | base64 -d && echo
+
+2. 🌐 Access KubeNexus Dashboard:
+{{- if .Values.ingress.enabled }}
+   {{- range .Values.ingress.hosts }}
+   Ingress Host: http://{{ .host }}
+   (Ensure '{{ .host }}' points to your Ingress Controller IP in your hosts file)
+   {{- end }}
+{{- else }}
+   Run port-forward to access dashboard locally:
+   kubectl port-forward svc/{{ include "kubenexus.fullname" . }}-frontend 8080:80 -n {{ .Release.Namespace }}
+   Then open: http://localhost:8080
+{{- end }}
+
+========================================================================

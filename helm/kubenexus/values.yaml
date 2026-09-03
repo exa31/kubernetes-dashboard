@@ -77,6 +77,13 @@ ingress:
   #   hosts:
   #     - kubenexus.local
 
+# Default Seed Administrator Account
+admin:
+  email: "admin@kubenexus.local"
+  # Leave empty ("") to automatically generate a secure random 16-character admin password.
+  # The generated password will persist across future Helm upgrades via lookup.
+  password: ""
+
 # Security & JWT Tokens
 jwt:
   # Leave empty ("") to automatically generate a secure random 32-character secret key.

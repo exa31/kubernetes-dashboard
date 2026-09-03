@@ -68,6 +68,20 @@ case "$ACTION" in
         echo -e "\n\033[1;33m[3/3] Checking cluster status...\033[0m"
         sleep 3
         kubectl get all,ingress -n "$NAMESPACE"
+
+        echo -e "\n\033[1;32m========================================================\033[0m"
+        echo -e "\033[1;32m  DEPLOYMENT SELESAI!\033[0m"
+        echo -e "  Akses dashboard: \033[1;36mhttp://kubenexus.local\033[0m"
+
+        ADMIN_EMAIL=$(kubectl get secret --namespace "$NAMESPACE" "${RELEASE_NAME}-secret" -o jsonpath="{.data.ADMIN_EMAIL}" 2>/dev/null | base64 -d 2>/dev/null || true)
+        ADMIN_PASS=$(kubectl get secret --namespace "$NAMESPACE" "${RELEASE_NAME}-secret" -o jsonpath="{.data.ADMIN_PASSWORD}" 2>/dev/null | base64 -d 2>/dev/null || true)
+        if [ -n "$ADMIN_PASS" ]; then
+            echo -e "\n\033[1;33m  🔐 KREDENSIAL LOGIN ADMIN (AUTO-GENERATED):\033[0m"
+            echo -e "     Email   : \033[1;37m$ADMIN_EMAIL\033[0m"
+            echo -e "     Password: \033[1;32m$ADMIN_PASS\033[0m"
+            echo -e "     (Tersimpan aman di Kubernetes Secret: ${RELEASE_NAME}-secret)\033[0m"
+        fi
+        echo -e "\033[1;32m========================================================\033[0m\n"
         ;;
 
     *)

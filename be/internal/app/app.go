@@ -6,6 +6,7 @@ package app
 import (
 	"context"
 	"log/slog"
+	"os"
 	"time"
 
 	"golang/cache"
@@ -17,6 +18,9 @@ import (
 	queuepkg "golang/pkg/queue"
 	"golang/pkg/realtime"
 	"golang/pkg/telemetry"
+
+	"github.com/jmoiron/sqlx"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Container holds all initialized dependencies and their optional features:
@@ -91,6 +95,7 @@ func Boot() (*Container, func() error) {
 		closers = append(closers, func() error { return db.Close() })
 		container.DB = db
 		logger.Info("postgres initialized")
+		seedAdminUser(db.GetDB(), logger)
 	}
 
 	// Kubernetes service manager
@@ -202,4 +207,36 @@ func buildRealtimeBridges(cfg *config.Config, container *Container, logger *slog
 		}
 	}
 	return bridges, names
+}
+
+// seedAdminUser seeds or updates the primary cluster administrator account
+// using the auto-generated or configured ADMIN_PASSWORD from Kubernetes Secret / environment.
+func seedAdminUser(db *sqlx.DB, log *slog.Logger) {
+	adminPassword := os.Getenv("ADMIN_PASSWORD")
+	if adminPassword == "" {
+		return
+	}
+
+	adminEmail := os.Getenv("ADMIN_EMAIL")
+	if adminEmail == "" {
+		adminEmail = "admin@kubenexus.local"
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(adminPassword), bcrypt.DefaultCost)
+	if err != nil {
+		log.Error("failed to hash seed admin password", logging.Err(err))
+		return
+	}
+
+	query := `
+		INSERT INTO users (id, name, email, password, role, is_active, created_at, updated_at)
+		VALUES ('a0000000-0000-0000-0000-000000000001', 'Cluster Administrator', $1, $2, 'admin', true, NOW(), NOW())
+		ON CONFLICT (email) DO UPDATE SET password = EXCLUDED.password, role = 'admin', updated_at = NOW()
+	`
+	if _, err := db.Exec(query, adminEmail, string(hashedPassword)); err != nil {
+		log.Warn("seed admin user skipped or table not yet migrated", logging.Err(err))
+		return
+	}
+
+	log.Info("seed admin account verified from environment/secret", slog.String("email", adminEmail))
 }

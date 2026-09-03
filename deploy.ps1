@@ -114,12 +114,26 @@ switch ($Action) {
         kubectl get all,ingress -n $Namespace
 
         Write-Host "`n========================================================" -ForegroundColor Green
-        Write-Host "  DEPLOIMENT SELESAI!" -ForegroundColor Green
+        Write-Host "  DEPLOYMENT SELESAI!" -ForegroundColor Green
         Write-Host "  Untuk mengakses dashboard melalui Ingress:" -ForegroundColor White
         Write-Host "  1. Pastikan ingress controller aktif di cluster Anda (misal: ingress-nginx)" -ForegroundColor Gray
-        Write-Host "  2. Tambahkan domain ke /etc/hosts atau C:\Windows\System32\drivers\etc\hosts:" -ForegroundColor Gray
-        Write-Host "     <INGRESS_IP_ATAU_127.0.0.1> kubenexus.local" -ForegroundColor Cyan
-        Write-Host "  3. Buka browser: http://kubenexus.local" -ForegroundColor Cyan
+        Write-Host "  2. Tambahkan domain ke hosts file (C:\Windows\System32\drivers\etc\hosts):" -ForegroundColor Gray
+        Write-Host "     127.0.0.1 kubenexus.local" -ForegroundColor Cyan
+        Write-Host "  3. Buka browser: http://kubenexus.local`n" -ForegroundColor Cyan
+
+        # Display Auto-Generated Admin Credentials
+        try {
+            $adminEmailRaw = kubectl get secret --namespace $Namespace "${ReleaseName}-secret" -o jsonpath="{.data.ADMIN_EMAIL}" 2>$null
+            $adminPassRaw = kubectl get secret --namespace $Namespace "${ReleaseName}-secret" -o jsonpath="{.data.ADMIN_PASSWORD}" 2>$null
+            if ($adminPassRaw) {
+                $adminEmail = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($adminEmailRaw))
+                $adminPass = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($adminPassRaw))
+                Write-Host "  🔐 KREDENSIAL LOGIN ADMIN (AUTO-GENERATED):" -ForegroundColor Yellow
+                Write-Host "     Email   : $adminEmail" -ForegroundColor White
+                Write-Host "     Password: $adminPass" -ForegroundColor Green
+                Write-Host "     (Password ini tersimpan aman di Kubernetes Secret)" -ForegroundColor Gray
+            }
+        } catch {}
         Write-Host "========================================================`n" -ForegroundColor Green
     }
 }
