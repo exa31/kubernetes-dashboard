@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 env:
@@ -200,3 +200,10 @@ jobs:
           name: kubenexus-helm-chart
           path: dist-chart/*.tgz
           retention-days: 30
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist-chart/*.tgz
+          generate_release_notes: true
