@@ -8,18 +8,17 @@ metadata:
   name: kubenexus-ingress
   namespace: kubenexus
   annotations:
-    # 1. Cert-Manager Let's Encrypt Automatic SSL
+    # 1. Otomatisasi Sertifikat SSL Let's Encrypt via Cert-Manager
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     acme.cert-manager.io/http01-edit-in-place: "true"
 
-    # 2. Ingress NGINX Configuration
+    # 2. Pengaturan Ingress NGINX Controller
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
 
-    # 3. Essential for Interactive Container Web Terminal & Live Logs Streaming
+    # 3. Timeout agar Web Terminal Container & Live Logs tidak terputus
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
-    nginx.ingress.kubernetes.io/websocket-services: "kubenexus-backend"
 spec:
   ingressClassName: nginx
   tls:
@@ -30,16 +29,11 @@ spec:
     - host: dashboard.yourdomain.com
       http:
         paths:
-          # Arahkan endpoint API & WebSocket terminal ke Service Backend
-          - path: /api
-            pathType: Prefix
-            backend:
-              service:
-                name: kubenexus-backend
-                port:
-                  number: 3001
-
-          # Arahkan endpoint Frontend Dashboard UI ke Service Frontend
+          # CUKUP 1 PATH INI SAJA!
+          # Nginx di dalam pod frontend sudah otomatis me-reverse-proxy:
+          # - Request UI web (/) -> dilayani langsung oleh Vue 3
+          # - Request API (/api) -> diteruskan otomatis ke backend di port 3001
+          # - WebSocket (/api/v1/k8s/ws/) -> diteruskan otomatis ke backend
           - path: /
             pathType: Prefix
             backend:

@@ -77,7 +77,6 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
-    nginx.ingress.kubernetes.io/websocket-services: "kubenexus-backend"
 spec:
   ingressClassName: nginx
   tls:
@@ -88,13 +87,7 @@ spec:
     - host: dashboard.yourdomain.com
       http:
         paths:
-          - path: /api
-            pathType: Prefix
-            backend:
-              service:
-                name: kubenexus-backend
-                port:
-                  number: 3001
+          # Only 1 path needed! The Frontend Nginx internally proxies /api and WebSockets to the Backend
           - path: /
             pathType: Prefix
             backend:
