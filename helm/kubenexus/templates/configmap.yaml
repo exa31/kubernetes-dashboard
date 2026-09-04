@@ -8,6 +8,7 @@ metadata:
 data:
   APP_ENV: {{ .Values.backend.env.APP_ENV | quote }}
   APP_PORT: {{ .Values.backend.env.APP_PORT | quote }}
+  SERVER_PORT: {{ .Values.backend.service.port | quote }}
   K8S_IN_CLUSTER: {{ .Values.backend.env.K8S_IN_CLUSTER | quote }}
   DB_HOST: {{ include "kubenexus.dbHost" . | quote }}
   DB_PORT: {{ .Values.database.port | quote }}

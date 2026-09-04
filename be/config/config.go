@@ -123,7 +123,7 @@ func Load() *Config {
 		},
 		Server: ServerConfig{
 			Host: getEnv("SERVER_HOST", "0.0.0.0"),
-			Port: getEnv("SERVER_PORT", "3000"),
+			Port: getEnv("SERVER_PORT", getEnv("APP_PORT", "3000")),
 		},
 		Log: LogConfig{
 			Level: getEnv("LOG_LEVEL", "info"),
