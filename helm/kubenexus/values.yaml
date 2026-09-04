@@ -91,8 +91,8 @@ jwt:
   # Leave empty ("") to automatically generate a secure random 32-character secret key.
   # The generated key will persist across future Helm upgrades via lookup.
   secret: ""
-  accessDuration: "15m"
-  refreshDuration: "168h"
+  accessDuration: "15" # in minutes
+  refreshDuration: "168" # in hours (7 days)
 
 # Database Configuration (External or Built-in)
 database:

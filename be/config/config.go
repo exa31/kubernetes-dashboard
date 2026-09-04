@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -224,7 +225,27 @@ func getEnv(key, defaultValue string) string {
 func getEnvAsInt(key string, defaultValue int) int {
 	viper.BindEnv(key)
 	if viper.IsSet(key) {
-		return viper.GetInt(key)
+		str := strings.TrimSpace(viper.GetString(key))
+		if str == "" {
+			return defaultValue
+		}
+		if i, err := strconv.Atoi(str); err == nil {
+			return i
+		}
+		// Fallback: parse duration strings like "15m", "168h", "30s"
+		if d, err := time.ParseDuration(str); err == nil {
+			upperKey := strings.ToUpper(key)
+			if strings.Contains(upperKey, "ACCESS") {
+				return int(d.Minutes())
+			}
+			if strings.Contains(upperKey, "REFRESH") {
+				return int(d.Hours())
+			}
+			return int(d.Seconds())
+		}
+		if v := viper.GetInt(key); v != 0 {
+			return v
+		}
 	}
 	return defaultValue
 }

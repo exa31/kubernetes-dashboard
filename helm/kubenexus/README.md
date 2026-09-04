@@ -177,8 +177,8 @@ The following table lists the configurable parameters of the KubeNexus chart and
 | `admin.email` | Initial administrator login email | `"admin@kubenexus.local"` |
 | `admin.password` | Administrator password. If empty (`""`), automatically generated (16 chars) | `""` (Auto-generated) |
 | `jwt.secret` | JWT signing key. If empty (`""`), automatically generated (32 chars) | `""` (Auto-generated) |
-| `jwt.accessDuration` | JWT Access token expiration | `"15m"` |
-| `jwt.refreshDuration` | JWT Refresh token expiration | `"168h"` |
+| `jwt.accessDuration` | JWT Access token expiration (minutes) | `"15"` |
+| `jwt.refreshDuration` | JWT Refresh token expiration (hours) | `"168"` |
 
 ### Backend Service (`backend`)
 | Parameter | Description | Default |
