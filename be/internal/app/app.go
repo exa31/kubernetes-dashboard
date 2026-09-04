@@ -231,7 +231,7 @@ func seedAdminUser(db *sqlx.DB, log *slog.Logger) {
 	query := `
 		INSERT INTO users (id, name, email, password, role, is_active, created_at, updated_at)
 		VALUES ('a0000000-0000-0000-0000-000000000001', 'Cluster Administrator', $1, $2, 'admin', true, NOW(), NOW())
-		ON CONFLICT (email) DO UPDATE SET password = EXCLUDED.password, role = 'admin', updated_at = NOW()
+		ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, password = EXCLUDED.password, role = 'admin', updated_at = NOW()
 	`
 	if _, err := db.Exec(query, adminEmail, string(hashedPassword)); err != nil {
 		log.Warn("seed admin user skipped or table not yet migrated", logging.Err(err))
