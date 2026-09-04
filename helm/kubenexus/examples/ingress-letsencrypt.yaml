@@ -1,6 +1,8 @@
-# Example: Custom Ingress with Let's Encrypt (Cert-Manager) for KubeNexus
-# Replace 'dashboard.yourdomain.com' with your actual domain name.
-# Replace 'letsencrypt-prod' with your Cert-Manager ClusterIssuer name.
+# ============================================================================
+# KubeNexus Ingress Manifest with Let's Encrypt (Cert-Manager)
+# Optimized for Traefik (K3s Default) & NGINX Ingress Controller
+# ============================================================================
+# Ganti 'kubenexus.eka-dev.cloud' dengan domain / subdomain Anda.
 
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -8,32 +10,36 @@ metadata:
   name: kubenexus-ingress
   namespace: kubenexus
   annotations:
-    # 1. Otomatisasi Sertifikat SSL Let's Encrypt via Cert-Manager
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    acme.cert-manager.io/http01-edit-in-place: "true"
+    # 1. Traefik Routing & Auto HTTPS Redirect (K3s Default)
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/redirect-entry-point: websecure
+    traefik.ingress.kubernetes.io/redirect-permanent: "true"
 
-    # 2. Pengaturan Ingress NGINX Controller
-    kubernetes.io/ingress.class: "nginx"
-    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    # 2. Otomatisasi Sertifikat SSL Let's Encrypt via Cert-Manager
+    cert-manager.io/cluster-issuer: letsencrypt
 
-    # 3. Timeout agar Web Terminal Container & Live Logs tidak terputus
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    # (Opsional jika Anda menggunakan NGINX Ingress Controller ganti dengan:)
+    # kubernetes.io/ingress.class: "nginx"
+    # cert-manager.io/cluster-issuer: "letsencrypt"
+    # nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    # nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    # nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
 spec:
-  ingressClassName: nginx
+  # Hapus atau ubah ingressClassName jika menggunakan controller lain (misal: traefik / nginx)
+  ingressClassName: traefik
   tls:
     - hosts:
-        - dashboard.yourdomain.com
-      secretName: kubenexus-tls-cert
+        - kubenexus.eka-dev.cloud
+      secretName: kubenexus-tls
   rules:
-    - host: dashboard.yourdomain.com
+    - host: kubenexus.eka-dev.cloud
       http:
         paths:
           # CUKUP 1 PATH INI SAJA!
-          # Nginx di dalam pod frontend sudah otomatis me-reverse-proxy:
-          # - Request UI web (/) -> dilayani langsung oleh Vue 3
-          # - Request API (/api) -> diteruskan otomatis ke backend di port 3001
-          # - WebSocket (/api/v1/k8s/ws/) -> diteruskan otomatis ke backend
+          # Nginx di dalam pod kubenexus-frontend sudah otomatis me-reverse-proxy:
+          # - Request UI Web (/)         -> dilayani langsung oleh Vue 3 SPA
+          # - Request API (/api)        -> diteruskan otomatis ke backend di port 3001
+          # - WebSocket (/api/v1/k8s/ws) -> diteruskan otomatis ke backend
           - path: /
             pathType: Prefix
             backend:
@@ -41,3 +47,4 @@ spec:
                 name: kubenexus-frontend
                 port:
                   number: 80
+
