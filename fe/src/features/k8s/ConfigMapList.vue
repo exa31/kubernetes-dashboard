@@ -7,6 +7,8 @@ import Dialog from 'primevue/dialog'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
 
 import EnvEditor from '@/features/k8s/EnvEditor.vue'
@@ -15,6 +17,8 @@ import type { ConfigMapDetail, ConfigMapItem } from '@/types'
 
 const k8sStore = useK8sStore()
 const { configmaps, selectedNamespace, isLoading, isActionLoading } = storeToRefs(k8sStore)
+const confirm = useConfirm()
+const toast = useToast()
 
 const searchQuery = ref('')
 const activeConfigMapDetail = ref<ConfigMapDetail | null>(null)
@@ -45,10 +49,39 @@ const openConfigMap = async (item: ConfigMapItem) => {
   }
 }
 
-const deleteConfigMap = async (item: ConfigMapItem) => {
-  if (confirm(`Are you sure you want to delete configmap '${item.name}' from namespace '${selectedNamespace.value}'?`)) {
-    await k8sStore.deleteConfigMap(item.name)
-  }
+const deleteConfigMap = (item: ConfigMapItem) => {
+  confirm.require({
+    message: `Are you sure you want to delete configmap '${item.name}' from namespace '${selectedNamespace.value}'?`,
+    header: 'Delete ConfigMap',
+    icon: 'pi pi-exclamation-triangle',
+    rejectProps: {
+      label: 'Cancel',
+      severity: 'secondary',
+      outlined: true,
+    },
+    acceptProps: {
+      label: 'Delete',
+      severity: 'danger',
+    },
+    accept: async () => {
+      try {
+        await k8sStore.deleteConfigMap(item.name)
+        toast.add({
+          severity: 'success',
+          summary: 'Deleted',
+          detail: `ConfigMap '${item.name}' deleted successfully`,
+          life: 3000,
+        })
+      } catch (err: unknown) {
+        toast.add({
+          severity: 'error',
+          summary: 'Delete Failed',
+          detail: err instanceof Error ? err.message : 'Failed to delete ConfigMap',
+          life: 4000,
+        })
+      }
+    },
+  })
 }
 
 const createConfigMap = async () => {
@@ -70,14 +103,28 @@ const createConfigMap = async () => {
     }
   }
 
-  await k8sStore.saveConfigMap({
-    name: newCMName.value.trim(),
-    namespace: selectedNamespace.value,
-    data,
-  })
-
-  isCreateOpen.value = false
-  newCMName.value = ''
+  try {
+    await k8sStore.saveConfigMap({
+      name: newCMName.value.trim(),
+      namespace: selectedNamespace.value,
+      data,
+    })
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: `ConfigMap '${newCMName.value.trim()}' created successfully`,
+      life: 3000,
+    })
+    isCreateOpen.value = false
+    newCMName.value = ''
+  } catch (err: unknown) {
+    toast.add({
+      severity: 'error',
+      summary: 'Create Failed',
+      detail: err instanceof Error ? err.message : 'Failed to create ConfigMap',
+      life: 4000,
+    })
+  }
 }
 </script>
 

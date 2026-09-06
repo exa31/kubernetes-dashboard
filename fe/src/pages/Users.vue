@@ -414,12 +414,12 @@ const roleBadgeConfig = (role: UserRole) => {
             <div class="flex items-center gap-1.5 justify-end">
               <!-- Edit -->
               <Button
+                v-tooltip.top="'Edit Member'"
                 icon="pi pi-pencil"
                 text
                 rounded
                 severity="secondary"
                 size="small"
-                v-tooltip.top="'Edit Member'"
                 :disabled="!authStore.isAdmin"
                 class="text-slate-400 hover:text-white hover:bg-slate-800/80 cursor-pointer"
                 @click="openEditDialog(data)"
@@ -427,12 +427,12 @@ const roleBadgeConfig = (role: UserRole) => {
 
               <!-- Reset Password -->
               <Button
+                v-tooltip.top="'Reset Password'"
                 icon="pi pi-key"
                 text
                 rounded
                 severity="secondary"
                 size="small"
-                v-tooltip.top="'Reset Password'"
                 :disabled="!authStore.isAdmin"
                 class="text-slate-400 hover:text-amber-400 hover:bg-slate-800/80 cursor-pointer"
                 @click="openResetPasswordDialog(data)"
@@ -440,12 +440,12 @@ const roleBadgeConfig = (role: UserRole) => {
 
               <!-- Delete -->
               <Button
+                v-tooltip.top="'Delete / Deactivate'"
                 icon="pi pi-trash"
                 text
                 rounded
                 severity="secondary"
                 size="small"
-                v-tooltip.top="'Delete / Deactivate'"
                 :disabled="!authStore.isAdmin || data.email === authStore.user?.email"
                 class="text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 cursor-pointer"
                 @click="openDeleteDialog(data)"

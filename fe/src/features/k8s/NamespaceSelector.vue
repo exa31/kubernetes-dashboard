@@ -3,8 +3,9 @@ import { storeToRefs } from 'pinia'
 import Select from 'primevue/select'
 import { onMounted, ref } from 'vue'
 
-import CreateNamespaceDialog from './CreateNamespaceDialog.vue'
 import { useK8sStore } from '@/stores'
+
+import CreateNamespaceDialog from './CreateNamespaceDialog.vue'
 
 const k8sStore = useK8sStore()
 const { namespaces, selectedNamespace, isLoading } = storeToRefs(k8sStore)

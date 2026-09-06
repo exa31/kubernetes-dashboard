@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, onBeforeUnmount } from 'vue'
-import Dialog from 'primevue/dialog'
-import { Terminal } from '@xterm/xterm'
-import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
+
+import { FitAddon } from '@xterm/addon-fit'
+import { Terminal } from '@xterm/xterm'
+import Dialog from 'primevue/dialog'
+import { nextTick, onBeforeUnmount,ref, watch } from 'vue'
 
 interface Props {
   visible: boolean
@@ -262,7 +263,8 @@ onBeforeUnmount(() => {
                 'bg-rose-500/10 text-rose-400 border-rose-500/30': connectionStatus === 'disconnected',
               }"
             >
-              <span class="inline-block w-1.5 h-1.5 rounded-full mr-1" :class="{
+              <span
+class="inline-block w-1.5 h-1.5 rounded-full mr-1" :class="{
                 'bg-emerald-400 animate-pulse': connectionStatus === 'connected',
                 'bg-amber-400 animate-pulse': connectionStatus === 'connecting',
                 'bg-rose-400': connectionStatus === 'disconnected',

@@ -1,4 +1,5 @@
 import type { CreateUserPayload, ResetPasswordPayload, UpdateUserPayload, User } from '@/types'
+
 import { apiClient } from './client'
 
 export const userApi = {

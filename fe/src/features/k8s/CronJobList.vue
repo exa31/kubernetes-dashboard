@@ -7,6 +7,8 @@ import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
 import Tag from 'primevue/tag'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
 
 import { useK8sStore } from '@/stores'
@@ -20,6 +22,8 @@ import ResourceYamlDialog from './ResourceYamlDialog.vue'
 
 const k8sStore = useK8sStore()
 const { cronjobs, selectedNamespace, isLoading, isActionLoading } = storeToRefs(k8sStore)
+const confirm = useConfirm()
+const toast = useToast()
 
 const searchQuery = ref('')
 const isCreateOpen = ref(false)
@@ -100,22 +104,48 @@ async function handleToggleSuspend(cj: CronJobItem) {
   }
 }
 
-async function handleDelete(cj: CronJobItem) {
-  if (!confirm(`Are you sure you want to delete CronJob '${cj.name}'?`)) {
-    return
-  }
-  try {
-    await k8sStore.deleteCronJob(cj.name, cj.namespace)
-    notification.value = {
-      type: 'success',
-      message: `CronJob '${cj.name}' deleted successfully`,
-    }
-  } catch (err: unknown) {
-    notification.value = {
-      type: 'error',
-      message: err instanceof Error ? err.message : 'Failed to delete CronJob',
-    }
-  }
+function handleDelete(cj: CronJobItem) {
+  confirm.require({
+    message: `Are you sure you want to delete CronJob '${cj.name}'?`,
+    header: 'Delete CronJob',
+    icon: 'pi pi-exclamation-triangle',
+    rejectProps: {
+      label: 'Cancel',
+      severity: 'secondary',
+      outlined: true,
+    },
+    acceptProps: {
+      label: 'Delete',
+      severity: 'danger',
+    },
+    accept: async () => {
+      try {
+        await k8sStore.deleteCronJob(cj.name, cj.namespace)
+        notification.value = {
+          type: 'success',
+          message: `CronJob '${cj.name}' deleted successfully`,
+        }
+        toast.add({
+          severity: 'success',
+          summary: 'Deleted',
+          detail: `CronJob '${cj.name}' deleted successfully`,
+          life: 3000,
+        })
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Failed to delete CronJob'
+        notification.value = {
+          type: 'error',
+          message: msg,
+        }
+        toast.add({
+          severity: 'error',
+          summary: 'Delete Failed',
+          detail: msg,
+          life: 4000,
+        })
+      }
+    },
+  })
 }
 </script>
 

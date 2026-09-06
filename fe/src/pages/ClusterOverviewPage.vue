@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useK8sStore } from '@/stores/k8s'
+import { computed,onMounted, ref } from 'vue'
+
 import ResourceYamlDialog from '@/features/k8s/ResourceYamlDialog.vue'
+import { useK8sStore } from '@/stores/k8s'
 
 const k8sStore = useK8sStore()
 

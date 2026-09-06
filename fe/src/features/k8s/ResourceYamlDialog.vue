@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
 import Dialog from 'primevue/dialog'
-import { k8sApi } from '@/api'
 import { useToast } from 'primevue/usetoast'
+import { computed,ref, watch } from 'vue'
+
+import { k8sApi } from '@/api'
 
 interface Props {
   visible: boolean
@@ -112,13 +113,9 @@ const lineCount = computed(() => {
   return yamlContent.value.split('\n').length
 })
 
-const lineNumbers = computed(() => {
-  return Array.from({ length: lineCount.value }, (_, i) => i + 1)
-})
+const lineNumbers = computed(() => Array.from({ length: lineCount.value }, (_, i) => i + 1))
 
-const isModified = computed(() => {
-  return yamlContent.value !== originalYaml.value
-})
+const isModified = computed(() => yamlContent.value !== originalYaml.value)
 
 async function fetchManifest() {
   if (!props.kind || !props.name) return
@@ -452,7 +449,8 @@ watch(
           </div>
 
           <!-- Diff Sign -->
-          <span class="w-5 text-center shrink-0 font-bold" :class="{
+          <span
+class="w-5 text-center shrink-0 font-bold" :class="{
             'text-emerald-400': diff.type === 'added',
             'text-rose-400': diff.type === 'removed',
             'text-slate-700': diff.type === 'unchanged',

@@ -8,6 +8,8 @@ import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
 import Tag from 'primevue/tag'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
 
 import EnvEditor from '@/features/k8s/EnvEditor.vue'
@@ -16,6 +18,8 @@ import type { SecretDetail, SecretItem } from '@/types'
 
 const k8sStore = useK8sStore()
 const { secrets, selectedNamespace, isLoading, isActionLoading } = storeToRefs(k8sStore)
+const confirm = useConfirm()
+const toast = useToast()
 
 const searchQuery = ref('')
 const activeSecretDetail = ref<SecretDetail | null>(null)
@@ -49,10 +53,39 @@ const openSecret = async (item: SecretItem) => {
   }
 }
 
-const deleteSecret = async (item: SecretItem) => {
-  if (confirm(`Are you sure you want to delete secret '${item.name}' from namespace '${selectedNamespace.value}'?`)) {
-    await k8sStore.deleteSecret(item.name)
-  }
+const deleteSecret = (item: SecretItem) => {
+  confirm.require({
+    message: `Are you sure you want to delete secret '${item.name}' from namespace '${selectedNamespace.value}'?`,
+    header: 'Delete Secret',
+    icon: 'pi pi-exclamation-triangle',
+    rejectProps: {
+      label: 'Cancel',
+      severity: 'secondary',
+      outlined: true,
+    },
+    acceptProps: {
+      label: 'Delete',
+      severity: 'danger',
+    },
+    accept: async () => {
+      try {
+        await k8sStore.deleteSecret(item.name)
+        toast.add({
+          severity: 'success',
+          summary: 'Deleted',
+          detail: `Secret '${item.name}' deleted successfully`,
+          life: 3000,
+        })
+      } catch (err: unknown) {
+        toast.add({
+          severity: 'error',
+          summary: 'Delete Failed',
+          detail: err instanceof Error ? err.message : 'Failed to delete Secret',
+          life: 4000,
+        })
+      }
+    },
+  })
 }
 
 const createSecret = async () => {
@@ -74,15 +107,29 @@ const createSecret = async () => {
     }
   }
 
-  await k8sStore.saveSecret({
-    name: newSecretName.value.trim(),
-    namespace: selectedNamespace.value,
-    type: newSecretType.value,
-    data,
-  })
-
-  isCreateOpen.value = false
-  newSecretName.value = ''
+  try {
+    await k8sStore.saveSecret({
+      name: newSecretName.value.trim(),
+      namespace: selectedNamespace.value,
+      type: newSecretType.value,
+      data,
+    })
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: `Secret '${newSecretName.value.trim()}' created successfully`,
+      life: 3000,
+    })
+    isCreateOpen.value = false
+    newSecretName.value = ''
+  } catch (err: unknown) {
+    toast.add({
+      severity: 'error',
+      summary: 'Create Failed',
+      detail: err instanceof Error ? err.message : 'Failed to create Secret',
+      life: 4000,
+    })
+  }
 }
 </script>
 

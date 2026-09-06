@@ -22,8 +22,7 @@ export const useUserStore = defineStore('user', () => {
   const viewerCount = computed(() => users.value.filter((u) => u.role === 'viewer').length)
   const activeCount = computed(() => users.value.filter((u) => u.is_active).length)
 
-  const filteredUsers = computed(() => {
-    return users.value.filter((u) => {
+  const filteredUsers = computed(() => users.value.filter((u) => {
       // Search by name or email
       if (searchQuery.value) {
         const query = searchQuery.value.toLowerCase()
@@ -46,8 +45,7 @@ export const useUserStore = defineStore('user', () => {
       }
 
       return true
-    })
-  })
+    }))
 
   function getErrorMessage(err: unknown, fallback: string): string {
     if (err && typeof err === 'object' && 'response' in err) {

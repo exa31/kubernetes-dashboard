@@ -85,11 +85,9 @@ onBeforeUnmount(() => {
 })
 
 // Use eventsFeed if available, fallback to store events
-const allEvents = computed(() => {
-  return k8sStore.eventsFeed && k8sStore.eventsFeed.length > 0
+const allEvents = computed(() => k8sStore.eventsFeed && k8sStore.eventsFeed.length > 0
     ? k8sStore.eventsFeed
-    : k8sStore.events
-})
+    : k8sStore.events)
 
 const warningCount = computed(() => allEvents.value.filter((e) => e.type === 'Warning').length)
 const normalCount = computed(() => allEvents.value.filter((e) => e.type === 'Normal').length)

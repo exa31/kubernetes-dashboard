@@ -253,9 +253,7 @@ function loadTemplate(key: string) {
 const lineNumbersRef = ref<HTMLElement | null>(null)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
-const lineCount = computed(() => {
-  return Math.max(yamlContent.value.split('\n').length, 1)
-})
+const lineCount = computed(() => Math.max(yamlContent.value.split('\n').length, 1))
 
 function handleScroll() {
   if (textareaRef.value && lineNumbersRef.value) {
@@ -271,7 +269,7 @@ function handleKeydown(e: KeyboardEvent) {
     const start = target.selectionStart
     const end = target.selectionEnd
     yamlContent.value =
-      yamlContent.value.substring(0, start) + '  ' + yamlContent.value.substring(end)
+      `${yamlContent.value.substring(0, start)  }  ${  yamlContent.value.substring(end)}`
     setTimeout(() => {
       target.selectionStart = target.selectionEnd = start + 2
     }, 0)

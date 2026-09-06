@@ -7,6 +7,8 @@ import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
 import Tag from 'primevue/tag'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import DeploymentEditorDialog from '@/features/k8s/DeploymentEditorDialog.vue'
@@ -17,6 +19,8 @@ import { useK8sStore } from '@/stores'
 import type { DaemonSetItem, DeploymentItem, PodItem, StatefulSetItem } from '@/types'
 
 const k8sStore = useK8sStore()
+const confirm = useConfirm()
+const toast = useToast()
 const {
   deployments,
   statefulsets,
@@ -79,9 +83,21 @@ const quickScaleDeployment = async (item: DeploymentItem, newReplicas: number) =
   isScaling.value[item.name] = true
   try {
     await k8sStore.scaleDeployment(item.name, newReplicas)
-    showNotification(item.name, `Scaled deployment to ${newReplicas} replicas`)
+    const msg = `Scaled deployment to ${newReplicas} replicas`
+    showNotification(item.name, msg)
+    toast.add({
+      severity: 'success',
+      summary: 'Scale Success',
+      detail: `${item.name}: ${msg}`,
+      life: 3000,
+    })
   } catch (err: unknown) {
-    alert(`Failed to scale deployment: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    toast.add({
+      severity: 'error',
+      summary: 'Scale Deployment Failed',
+      detail: err instanceof Error ? err.message : 'Unknown error',
+      life: 5000,
+    })
   } finally {
     isScaling.value[item.name] = false
   }
@@ -93,9 +109,21 @@ const quickScaleStatefulSet = async (item: StatefulSetItem, newReplicas: number)
   isScaling.value[item.name] = true
   try {
     await k8sStore.scaleStatefulSet(item.name, newReplicas)
-    showNotification(item.name, `Scaled statefulset to ${newReplicas} replicas`)
+    const msg = `Scaled statefulset to ${newReplicas} replicas`
+    showNotification(item.name, msg)
+    toast.add({
+      severity: 'success',
+      summary: 'Scale Success',
+      detail: `${item.name}: ${msg}`,
+      life: 3000,
+    })
   } catch (err: unknown) {
-    alert(`Failed to scale statefulset: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    toast.add({
+      severity: 'error',
+      summary: 'Scale StatefulSet Failed',
+      detail: err instanceof Error ? err.message : 'Unknown error',
+      life: 5000,
+    })
   } finally {
     isScaling.value[item.name] = false
   }
@@ -185,48 +213,152 @@ const openYamlModal = (kind: string, name: string) => {
   isYamlOpen.value = true
 }
 
-const restartDeployment = async (item: DeploymentItem) => {
-  if (confirm(`Trigger rollout restart for deployment '${item.name}'? Pods will restart sequentially.`)) {
-    try {
-      const res = await k8sStore.restartDeployment(item.name)
-      showNotification(item.name, res.message || 'Rollout restart initiated')
-    } catch {
-      // handled in store
-    }
-  }
+const restartDeployment = (item: DeploymentItem) => {
+  confirm.require({
+    message: `Trigger rollout restart for deployment '${item.name}'? Pods will restart sequentially.`,
+    header: 'Restart Deployment',
+    icon: 'pi pi-refresh',
+    rejectProps: {
+      label: 'Cancel',
+      severity: 'secondary',
+      outlined: true,
+    },
+    acceptProps: {
+      label: 'Restart',
+      severity: 'warn',
+    },
+    accept: async () => {
+      try {
+        const res = await k8sStore.restartDeployment(item.name)
+        const msg = res.message || 'Rollout restart initiated'
+        showNotification(item.name, msg)
+        toast.add({
+          severity: 'info',
+          summary: 'Rollout Restarted',
+          detail: msg,
+          life: 4000,
+        })
+      } catch (err: unknown) {
+        toast.add({
+          severity: 'error',
+          summary: 'Restart Failed',
+          detail: err instanceof Error ? err.message : 'Failed to restart deployment',
+          life: 5000,
+        })
+      }
+    },
+  })
 }
 
-const restartStatefulSet = async (item: StatefulSetItem) => {
-  if (confirm(`Trigger rollout restart for statefulset '${item.name}'? Pods will restart sequentially.`)) {
-    try {
-      await k8sStore.restartStatefulSet(item.name)
-      showNotification(item.name, `Rollout restart initiated for ${item.name}`)
-    } catch {
-      // handled in store
-    }
-  }
+const restartStatefulSet = (item: StatefulSetItem) => {
+  confirm.require({
+    message: `Trigger rollout restart for statefulset '${item.name}'? Pods will restart sequentially.`,
+    header: 'Restart StatefulSet',
+    icon: 'pi pi-refresh',
+    rejectProps: {
+      label: 'Cancel',
+      severity: 'secondary',
+      outlined: true,
+    },
+    acceptProps: {
+      label: 'Restart',
+      severity: 'warn',
+    },
+    accept: async () => {
+      try {
+        await k8sStore.restartStatefulSet(item.name)
+        const msg = `Rollout restart initiated for ${item.name}`
+        showNotification(item.name, msg)
+        toast.add({
+          severity: 'info',
+          summary: 'Rollout Restarted',
+          detail: msg,
+          life: 4000,
+        })
+      } catch (err: unknown) {
+        toast.add({
+          severity: 'error',
+          summary: 'Restart Failed',
+          detail: err instanceof Error ? err.message : 'Failed to restart statefulset',
+          life: 5000,
+        })
+      }
+    },
+  })
 }
 
-const restartDaemonSet = async (item: DaemonSetItem) => {
-  if (confirm(`Trigger rollout restart for daemonset '${item.name}' across all nodes?`)) {
-    try {
-      await k8sStore.restartDaemonSet(item.name)
-      showNotification(item.name, `Rollout restart initiated for ${item.name}`)
-    } catch {
-      // handled in store
-    }
-  }
+const restartDaemonSet = (item: DaemonSetItem) => {
+  confirm.require({
+    message: `Trigger rollout restart for daemonset '${item.name}' across all nodes?`,
+    header: 'Restart DaemonSet',
+    icon: 'pi pi-refresh',
+    rejectProps: {
+      label: 'Cancel',
+      severity: 'secondary',
+      outlined: true,
+    },
+    acceptProps: {
+      label: 'Restart',
+      severity: 'warn',
+    },
+    accept: async () => {
+      try {
+        await k8sStore.restartDaemonSet(item.name)
+        const msg = `Rollout restart initiated for ${item.name}`
+        showNotification(item.name, msg)
+        toast.add({
+          severity: 'info',
+          summary: 'Rollout Restarted',
+          detail: msg,
+          life: 4000,
+        })
+      } catch (err: unknown) {
+        toast.add({
+          severity: 'error',
+          summary: 'Restart Failed',
+          detail: err instanceof Error ? err.message : 'Failed to restart daemonset',
+          life: 5000,
+        })
+      }
+    },
+  })
 }
 
-const deletePodConfirm = async (pod: PodItem) => {
-  if (confirm(`Delete / Redeploy pod '${pod.name}'? The controller will automatically recreate it.`)) {
-    try {
-      await k8sStore.deletePod(pod.name)
-      showNotification(pod.name, `Pod '${pod.name}' terminated and recreating`)
-    } catch {
-      // handled in store
-    }
-  }
+const deletePodConfirm = (pod: PodItem) => {
+  confirm.require({
+    message: `Delete / Redeploy pod '${pod.name}'? The controller will automatically recreate it.`,
+    header: 'Redeploy Pod',
+    icon: 'pi pi-exclamation-triangle',
+    rejectProps: {
+      label: 'Cancel',
+      severity: 'secondary',
+      outlined: true,
+    },
+    acceptProps: {
+      label: 'Redeploy',
+      severity: 'danger',
+    },
+    accept: async () => {
+      try {
+        await k8sStore.deletePod(pod.name)
+        const msg = `Pod '${pod.name}' terminated and recreating`
+        showNotification(pod.name, msg)
+        toast.add({
+          severity: 'warn',
+          summary: 'Pod Terminated',
+          detail: msg,
+          life: 4000,
+        })
+      } catch (err: unknown) {
+        toast.add({
+          severity: 'error',
+          summary: 'Redeploy Failed',
+          detail: err instanceof Error ? err.message : 'Failed to delete pod',
+          life: 5000,
+        })
+      }
+    },
+  })
 }
 
 function getPhaseColor(phase: string, reason?: string) {
