@@ -68,18 +68,16 @@ func (r *Router) registerUsers(api fiber.Router) {
 
 	users := api.Group("/users")
 	users.Use(authMiddleware.AuthMiddleware(r.JWTService))
+	users.Use(authMiddleware.RequireRole("admin"))
 
-	// Authenticated users can list and get user details
+	// All user management routes strictly restricted to admin
 	users.Get("/", handler.GetUsers())
 	users.Get("/:id", handler.GetUser())
-
-	// Management operations restricted to admin
-	adminUsers := users.Group("", authMiddleware.RequireRole("admin"))
-	adminUsers.Post("/", handler.CreateUser())
-	adminUsers.Put("/:id", handler.UpdateUser())
-	adminUsers.Post("/:id/reset-password", handler.ResetPassword())
-	adminUsers.Delete("/:id", handler.DeleteUser())
-	adminUsers.Delete("/admin/:id", handler.HardDeleteUser())
+	users.Post("/", handler.CreateUser())
+	users.Put("/:id", handler.UpdateUser())
+	users.Post("/:id/reset-password", handler.ResetPassword())
+	users.Delete("/:id", handler.DeleteUser())
+	users.Delete("/admin/:id", handler.HardDeleteUser())
 }
 
 func (r *Router) registerProtected(api fiber.Router) {

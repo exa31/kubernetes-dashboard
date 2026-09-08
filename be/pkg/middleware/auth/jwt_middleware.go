@@ -245,6 +245,24 @@ func RequireNamespaceAccess(isWrite bool) fiber.Handler {
 			targetNS = c.Query("namespace")
 		}
 
+		// Fallback: parse namespace from URL path (e.g. /api/v1/k8s/configmaps/:namespace/:name)
+		if targetNS == "" {
+			path := strings.Trim(c.Path(), "/")
+			parts := strings.Split(path, "/")
+			resourceIdx := -1
+			for i, p := range parts {
+				switch p {
+				case "secrets", "configmaps", "deployments", "services", "ingresses",
+					"cronjobs", "pods", "statefulsets", "daemonsets", "exec":
+					resourceIdx = i
+					break
+				}
+			}
+			if resourceIdx >= 0 && resourceIdx+1 < len(parts) {
+				targetNS = parts[resourceIdx+1]
+			}
+		}
+
 		// If still empty and it's a POST/PUT body with namespace
 		if targetNS == "" && isWrite && (c.Method() == fiber.MethodPost || c.Method() == fiber.MethodPut) {
 			var bodyMap map[string]interface{}
