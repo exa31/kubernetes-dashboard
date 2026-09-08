@@ -29,13 +29,14 @@ func NewAuthService(db *database.PostgresDB, jwtService *auth.JWTService) *AuthS
 }
 
 type authUser struct {
-	ID        string     `db:"id"`
-	Name      string     `db:"name"`
-	Email     string     `db:"email"`
-	Password  string     `db:"password"`
-	Role      string     `db:"role"`
-	IsActive  bool       `db:"is_active"`
-	CreatedAt *time.Time `db:"created_at"`
+	ID                string     `db:"id"`
+	Name              string     `db:"name"`
+	Email             string     `db:"email"`
+	Password          string     `db:"password"`
+	Role              string     `db:"role"`
+	AllowedNamespaces string     `db:"allowed_namespaces"`
+	IsActive          bool       `db:"is_active"`
+	CreatedAt         *time.Time `db:"created_at"`
 }
 
 // Register creates a user and returns the auth response.
@@ -49,9 +50,9 @@ func (s *AuthService) Register(req *RegisterRequest) (*AuthResponse, error) {
 		uid := uuid.New().String()
 		var u authUser
 		err := tx.QueryRowx(
-			`INSERT INTO users (id, name, email, password, role, is_active, created_at, updated_at)
-			 VALUES ($1, $2, $3, $4, 'viewer', TRUE, NOW(), NOW())
-			 RETURNING id, name, email, role, created_at`,
+			`INSERT INTO users (id, name, email, password, role, allowed_namespaces, is_active, created_at, updated_at)
+			 VALUES ($1, $2, $3, $4, 'viewer', '*', TRUE, NOW(), NOW())
+			 RETURNING id, name, email, role, allowed_namespaces, created_at`,
 			uid, req.Name, req.Email, string(hashedPassword),
 		).StructScan(&u)
 		if err != nil {
@@ -63,18 +64,19 @@ func (s *AuthService) Register(req *RegisterRequest) (*AuthResponse, error) {
 		return nil, err
 	}
 
-	tokens, err := s.jwtService.GenerateTokenPair(user.ID, user.Email, user.Role)
+	tokens, err := s.jwtService.GenerateTokenPair(user.ID, user.Email, user.Role, user.AllowedNamespaces)
 	if err != nil {
 		return nil, errors.InternalError("Failed to generate tokens", err)
 	}
 
 	return &AuthResponse{
 		User: UserPayload{
-			ID:        user.ID,
-			Name:      user.Name,
-			Email:     user.Email,
-			Role:      user.Role,
-			CreatedAt: derefTime(user.CreatedAt),
+			ID:                user.ID,
+			Name:              user.Name,
+			Email:             user.Email,
+			Role:              user.Role,
+			AllowedNamespaces: user.AllowedNamespaces,
+			CreatedAt:         derefTime(user.CreatedAt),
 		},
 		Tokens: newTokenPair(tokens),
 	}, nil
@@ -86,17 +88,18 @@ func (s *AuthService) Login(req *LoginRequest) (*AuthResponse, error) {
 		// Development fallback when PostgreSQL is offline
 		if req.Email == "admin@kubeenv.local" || req.Email == "admin@example.com" || req.Password == "password" {
 			now := time.Now()
-			tokens, err := s.jwtService.GenerateTokenPair("demo-admin-id", req.Email, "admin")
+			tokens, err := s.jwtService.GenerateTokenPair("demo-admin-id", req.Email, "admin", "*")
 			if err != nil {
 				return nil, errors.InternalError("Failed to generate tokens", err)
 			}
 			return &AuthResponse{
 				User: UserPayload{
-					ID:        "demo-admin-id",
-					Name:      "Kubernetes Admin",
-					Email:     req.Email,
-					Role:      "admin",
-					CreatedAt: now,
+					ID:                "demo-admin-id",
+					Name:              "Kubernetes Admin",
+					Email:             req.Email,
+					Role:              "admin",
+					AllowedNamespaces: "*",
+					CreatedAt:         now,
 				},
 				Tokens: newTokenPair(tokens),
 			}, nil
@@ -106,7 +109,7 @@ func (s *AuthService) Login(req *LoginRequest) (*AuthResponse, error) {
 
 	var u authUser
 	err := s.db.DB.Get(&u,
-		"SELECT id, name, email, password, role, is_active, created_at FROM users WHERE email = $1",
+		"SELECT id, name, email, password, role, allowed_namespaces, is_active, created_at FROM users WHERE email = $1",
 		req.Email)
 	if err != nil {
 		if stderrors.Is(err, sql.ErrNoRows) {
@@ -121,18 +124,23 @@ func (s *AuthService) Login(req *LoginRequest) (*AuthResponse, error) {
 		return nil, errors.Unauthorized("Invalid email or password")
 	}
 
-	tokens, err := s.jwtService.GenerateTokenPair(u.ID, u.Email, u.Role)
+	allowedNS := u.AllowedNamespaces
+	if allowedNS == "" {
+		allowedNS = "*"
+	}
+	tokens, err := s.jwtService.GenerateTokenPair(u.ID, u.Email, u.Role, allowedNS)
 	if err != nil {
 		return nil, errors.InternalError("Failed to generate tokens", err)
 	}
 
 	return &AuthResponse{
 		User: UserPayload{
-			ID:        u.ID,
-			Name:      u.Name,
-			Email:     u.Email,
-			Role:      u.Role,
-			CreatedAt: derefTime(u.CreatedAt),
+			ID:                u.ID,
+			Name:              u.Name,
+			Email:             u.Email,
+			Role:              u.Role,
+			AllowedNamespaces: allowedNS,
+			CreatedAt:         derefTime(u.CreatedAt),
 		},
 		Tokens: newTokenPair(tokens),
 	}, nil
@@ -151,16 +159,17 @@ func (s *AuthService) RefreshToken(refreshToken string) (*TokenPair, error) {
 func (s *AuthService) GetCurrentUser(userID string) (*UserPayload, error) {
 	if s.db == nil || s.db.DB == nil || userID == "demo-admin-id" {
 		return &UserPayload{
-			ID:        userID,
-			Name:      "Kubernetes Admin",
-			Email:     "admin@kubeenv.local",
-			Role:      "admin",
-			CreatedAt: time.Now(),
+			ID:                userID,
+			Name:              "Kubernetes Admin",
+			Email:             "admin@kubeenv.local",
+			Role:              "admin",
+			AllowedNamespaces: "*",
+			CreatedAt:         time.Now(),
 		}, nil
 	}
 
 	var u authUser
-	err := s.db.DB.Get(&u, "SELECT id, name, email, role, created_at FROM users WHERE id = $1", userID)
+	err := s.db.DB.Get(&u, "SELECT id, name, email, role, allowed_namespaces, created_at FROM users WHERE id = $1", userID)
 	if err != nil {
 		if stderrors.Is(err, sql.ErrNoRows) {
 			return nil, errors.NotFound("User not found")
@@ -168,12 +177,17 @@ func (s *AuthService) GetCurrentUser(userID string) (*UserPayload, error) {
 		return nil, errors.DatabaseError("Failed to fetch user", err)
 	}
 
+	allowedNS := u.AllowedNamespaces
+	if allowedNS == "" {
+		allowedNS = "*"
+	}
 	return &UserPayload{
-		ID:        u.ID,
-		Name:      u.Name,
-		Email:     u.Email,
-		Role:      u.Role,
-		CreatedAt: derefTime(u.CreatedAt),
+		ID:                u.ID,
+		Name:              u.Name,
+		Email:             u.Email,
+		Role:              u.Role,
+		AllowedNamespaces: allowedNS,
+		CreatedAt:         derefTime(u.CreatedAt),
 	}, nil
 }
 

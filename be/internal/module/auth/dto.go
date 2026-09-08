@@ -22,11 +22,12 @@ type RefreshTokenRequest struct {
 
 // UserPayload is a user summary for auth responses.
 type UserPayload struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	Email     string    `json:"email"`
-	Role      string    `json:"role"`
-	CreatedAt time.Time `json:"created_at"`
+	ID                string    `json:"id"`
+	Name              string    `json:"name"`
+	Email             string    `json:"email"`
+	Role              string    `json:"role"`
+	AllowedNamespaces string    `json:"allowed_namespaces"`
+	CreatedAt         time.Time `json:"created_at"`
 }
 
 // TokenPair mirrors the underlying token pair.

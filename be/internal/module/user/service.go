@@ -76,6 +76,11 @@ func (s *userService) Create(req *CreateUserRequest) (*UserResponse, error) {
 		role = "viewer"
 	}
 
+	allowedNamespaces := req.AllowedNamespaces
+	if allowedNamespaces == "" {
+		allowedNamespaces = "*"
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, appErrors.InternalError("Failed to hash password", err)
@@ -83,15 +88,16 @@ func (s *userService) Create(req *CreateUserRequest) (*UserResponse, error) {
 
 	now := time.Now()
 	user := &User{
-		ID:        uuid.New().String(),
-		Name:      req.Name,
-		Email:     req.Email,
-		Phone:     sql.NullString{String: req.Phone, Valid: req.Phone != ""},
-		Password:  string(hashedPassword),
-		Role:      role,
-		IsActive:  true,
-		CreatedAt: now,
-		UpdatedAt: now,
+		ID:                uuid.New().String(),
+		Name:              req.Name,
+		Email:             req.Email,
+		Phone:             sql.NullString{String: req.Phone, Valid: req.Phone != ""},
+		Password:          string(hashedPassword),
+		Role:              role,
+		AllowedNamespaces: allowedNamespaces,
+		IsActive:          true,
+		CreatedAt:         now,
+		UpdatedAt:         now,
 	}
 
 	if err := s.repo.Create(user); err != nil {
@@ -137,6 +143,9 @@ func (s *userService) Update(id string, req *UpdateUserRequest) (*UserResponse, 
 	}
 	if req.Role != "" {
 		updates["role"] = req.Role
+	}
+	if req.AllowedNamespaces != nil {
+		updates["allowed_namespaces"] = *req.AllowedNamespaces
 	}
 	if req.IsActive != nil {
 		updates["is_active"] = *req.IsActive
@@ -205,14 +214,19 @@ func (u *User) toResponse() UserResponse {
 	if role == "" {
 		role = "viewer"
 	}
+	allowedNS := u.AllowedNamespaces
+	if allowedNS == "" {
+		allowedNS = "*"
+	}
 	return UserResponse{
-		ID:        u.ID,
-		Name:      u.Name,
-		Email:     u.Email,
-		Role:      role,
-		Phone:     u.Phone.String,
-		IsActive:  u.IsActive,
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
+		ID:                u.ID,
+		Name:              u.Name,
+		Email:             u.Email,
+		Role:              role,
+		AllowedNamespaces: allowedNS,
+		Phone:             u.Phone.String,
+		IsActive:          u.IsActive,
+		CreatedAt:         u.CreatedAt,
+		UpdatedAt:         u.UpdatedAt,
 	}
 }

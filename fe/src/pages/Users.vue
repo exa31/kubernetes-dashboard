@@ -366,13 +366,21 @@ const roleBadgeConfig = (role: UserRole) => {
         <!-- Role / RBAC Column -->
         <Column header="Role & Privileges">
           <template #body="{ data }">
-            <span
-              class="px-2.5 py-1 rounded-full text-xs font-semibold border flex items-center gap-1.5 w-fit"
-              :class="roleBadgeConfig(data.role).classes"
-            >
-              <i class="pi" :class="roleBadgeConfig(data.role).icon"></i>
-              <span>{{ roleBadgeConfig(data.role).label }}</span>
-            </span>
+            <div class="space-y-1">
+              <span
+                class="px-2.5 py-1 rounded-full text-xs font-semibold border flex items-center gap-1.5 w-fit"
+                :class="roleBadgeConfig(data.role).classes"
+              >
+                <i class="pi" :class="roleBadgeConfig(data.role).icon"></i>
+                <span>{{ roleBadgeConfig(data.role).label }}</span>
+              </span>
+              <div v-if="data.role !== 'admin'" class="flex items-center gap-1 text-[11px] font-mono text-slate-400">
+                <i class="pi pi-box text-[10px] text-slate-500"></i>
+                <span class="truncate max-w-[180px]" :title="data.allowed_namespaces || '*'">
+                  {{ data.allowed_namespaces === '*' || !data.allowed_namespaces ? 'All Namespaces (*)' : data.allowed_namespaces }}
+                </span>
+              </div>
+            </div>
           </template>
         </Column>
 

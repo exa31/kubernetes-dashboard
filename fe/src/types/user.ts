@@ -8,6 +8,7 @@ export interface User {
   name: string
   email: string
   role: UserRole
+  allowed_namespaces?: string
   phone?: string
   avatarUrl?: string
   is_active: boolean
@@ -20,6 +21,7 @@ export interface CreateUserPayload {
   email: string
   password: string
   role: UserRole
+  allowed_namespaces?: string
   phone?: string
 }
 
@@ -27,6 +29,7 @@ export interface UpdateUserPayload {
   name?: string
   email?: string
   role?: UserRole
+  allowed_namespaces?: string
   phone?: string
   is_active?: boolean
 }

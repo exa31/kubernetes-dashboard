@@ -92,6 +92,7 @@ const handleLogout = async () => {
 
       <!-- Apply YAML Quick Action Button -->
       <button
+        v-if="!authStore.isViewer && authStore.canMutateNamespace(k8sStore.selectedNamespace)"
         type="button"
         class="btn-emerald flex items-center gap-1.5 text-xs font-semibold px-2.5 sm:px-3 py-1.5 rounded-lg shadow-xs cursor-pointer shrink-0 whitespace-nowrap active:scale-95 transition-all"
         title="Apply or validate raw Kubernetes YAML manifest"

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import Dialog from 'primevue/dialog'
 import { useToast } from 'primevue/usetoast'
-import { computed,ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { k8sApi } from '@/api'
+import { useAuthStore } from '@/stores'
 
 interface Props {
   visible: boolean
@@ -21,7 +22,10 @@ const emit = defineEmits<{
   (e: 'applied'): void
 }>()
 
+const authStore = useAuthStore()
 const toast = useToast()
+
+const canMutate = computed(() => authStore.canMutateNamespace(props.namespace))
 
 const yamlContent = ref('')
 const originalYaml = ref('')
@@ -281,6 +285,13 @@ watch(
             >
               MODIFIED
             </span>
+            <span
+              v-if="!canMutate"
+              class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/30 flex items-center gap-1"
+            >
+              <i class="pi pi-lock text-[9px]"></i>
+              READ-ONLY
+            </span>
           </div>
           <div class="text-xs text-slate-400 flex items-center gap-2 mt-0.5 font-mono">
             <span class="text-amber-300/90">{{ props.name }}</span>
@@ -322,6 +333,7 @@ watch(
 
         <!-- Edit Mode Toggle -->
         <button
+          v-if="canMutate"
           type="button"
           class="px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 border cursor-pointer"
           :class="isEditing
@@ -484,6 +496,7 @@ class="w-5 text-center shrink-0 font-bold" :class="{
         </button>
 
         <button
+          v-if="canMutate"
           type="button"
           class="px-4 py-2 rounded-xl text-xs font-medium bg-sky-600/20 hover:bg-sky-600/30 text-sky-400 border border-sky-500/40 transition flex items-center gap-1.5"
           :disabled="isValidating || !isModified"
@@ -495,6 +508,7 @@ class="w-5 text-center shrink-0 font-bold" :class="{
         </button>
 
         <button
+          v-if="canMutate"
           type="button"
           class="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 transition shadow-lg shadow-emerald-500/20 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
           :disabled="isApplying || !isModified"

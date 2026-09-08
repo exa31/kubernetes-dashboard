@@ -11,7 +11,6 @@ import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
 
-import { useK8sStore } from '@/stores'
 import type { CronJobDetail, CronJobItem } from '@/types'
 import { describeCron, formatDate } from '@/utils'
 
@@ -19,11 +18,15 @@ import CreateCronJobDialog from './CreateCronJobDialog.vue'
 import CronJobEditorDialog from './CronJobEditorDialog.vue'
 import CronJobHistoryDialog from './CronJobHistoryDialog.vue'
 import ResourceYamlDialog from './ResourceYamlDialog.vue'
+import { useAuthStore, useK8sStore } from '@/stores'
 
+const authStore = useAuthStore()
 const k8sStore = useK8sStore()
 const { cronjobs, selectedNamespace, isLoading, isActionLoading } = storeToRefs(k8sStore)
 const confirm = useConfirm()
 const toast = useToast()
+
+const canMutate = computed(() => authStore.canMutateNamespace(selectedNamespace.value))
 
 const searchQuery = ref('')
 const isCreateOpen = ref(false)
@@ -184,6 +187,7 @@ function handleDelete(cj: CronJobItem) {
         />
 
         <Button
+          v-if="canMutate"
           label="Create CronJob"
           icon="pi pi-plus"
           size="small"
@@ -191,6 +195,22 @@ function handleDelete(cj: CronJobItem) {
           @click="isCreateOpen = true"
         />
       </div>
+    </div>
+
+    <!-- Read-Only Notice for restricted users / viewers -->
+    <div
+      v-if="!canMutate"
+      class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3.5 flex items-center justify-between gap-3 text-amber-600 dark:text-amber-400 text-xs"
+    >
+      <div class="flex items-center gap-2">
+        <i class="pi pi-lock text-sm"></i>
+        <span>
+          <strong>Read-Only Mode:</strong> You do not have permission to modify cronjobs in namespace <strong>{{ selectedNamespace }}</strong>.
+        </span>
+      </div>
+      <span class="px-2 py-0.5 rounded text-[10px] uppercase font-mono font-semibold bg-amber-500/20 border border-amber-500/30">
+        {{ authStore.user?.role || 'Viewer' }}
+      </span>
     </div>
 
     <!-- Notification Banner -->
@@ -290,6 +310,7 @@ function handleDelete(cj: CronJobItem) {
             <div class="flex items-center justify-end gap-1.5">
               <!-- Run Now Button -->
               <Button
+                v-if="canMutate"
                 title="Trigger immediate execution"
                 icon="pi pi-bolt"
                 size="small"
@@ -300,6 +321,7 @@ function handleDelete(cj: CronJobItem) {
 
               <!-- Suspend/Resume Toggle Button -->
               <Button
+                v-if="canMutate"
                 :title="data.suspend ? 'Resume automatic schedule' : 'Pause schedule'"
                 :icon="data.suspend ? 'pi pi-play' : 'pi pi-pause'"
                 size="small"
@@ -328,6 +350,7 @@ function handleDelete(cj: CronJobItem) {
 
               <!-- Edit Button -->
               <Button
+                v-if="canMutate"
                 title="Edit schedule & container"
                 icon="pi pi-pencil"
                 size="small"
@@ -337,6 +360,7 @@ function handleDelete(cj: CronJobItem) {
 
               <!-- Delete Button -->
               <Button
+                v-if="canMutate"
                 title="Delete CronJob"
                 icon="pi pi-trash"
                 size="small"

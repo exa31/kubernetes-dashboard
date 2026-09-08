@@ -8,7 +8,7 @@ import (
 // GetAll retrieves all users ordered by creation date.
 func (r *userRepository) GetAll() ([]User, error) {
 	var users []User
-	query := "SELECT id, name, email, phone, role, is_active, created_at, updated_at FROM users ORDER BY created_at DESC"
+	query := "SELECT id, name, email, phone, role, allowed_namespaces, is_active, created_at, updated_at FROM users ORDER BY created_at DESC"
 	err := r.db.Select(&users, query)
 	return users, err
 }
@@ -16,7 +16,7 @@ func (r *userRepository) GetAll() ([]User, error) {
 // GetByID retrieves a user by ID.
 func (r *userRepository) GetByID(id string) (*User, error) {
 	var user User
-	query := "SELECT id, name, email, phone, password, role, is_active, created_at, updated_at FROM users WHERE id = $1"
+	query := "SELECT id, name, email, phone, password, role, allowed_namespaces, is_active, created_at, updated_at FROM users WHERE id = $1"
 	err := r.db.Get(&user, query, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -30,7 +30,7 @@ func (r *userRepository) GetByID(id string) (*User, error) {
 // GetByEmail retrieves a user by email.
 func (r *userRepository) GetByEmail(email string) (*User, error) {
 	var user User
-	query := "SELECT id, name, email, phone, password, role, is_active, created_at, updated_at FROM users WHERE email = $1"
+	query := "SELECT id, name, email, phone, password, role, allowed_namespaces, is_active, created_at, updated_at FROM users WHERE email = $1"
 	err := r.db.Get(&user, query, email)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -43,11 +43,15 @@ func (r *userRepository) GetByEmail(email string) (*User, error) {
 
 // Create inserts a new user.
 func (r *userRepository) Create(user *User) error {
+	allowedNS := user.AllowedNamespaces
+	if allowedNS == "" {
+		allowedNS = "*"
+	}
 	query := `
-		INSERT INTO users (id, name, email, phone, password, role, is_active, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO users (id, name, email, phone, password, role, allowed_namespaces, is_active, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
-	_, err := r.db.Exec(query, user.ID, user.Name, user.Email, user.Phone, user.Password, user.Role, user.IsActive, user.CreatedAt, user.UpdatedAt)
+	_, err := r.db.Exec(query, user.ID, user.Name, user.Email, user.Phone, user.Password, user.Role, allowedNS, user.IsActive, user.CreatedAt, user.UpdatedAt)
 	return err
 }
 
@@ -72,12 +76,16 @@ func (r *userRepository) Update(id string, updates map[string]interface{}) (*Use
 		query += fmt.Sprintf(", role = $%d", len(args)+1)
 		args = append(args, role)
 	}
+	if allowedNS, ok := updates["allowed_namespaces"].(string); ok {
+		query += fmt.Sprintf(", allowed_namespaces = $%d", len(args)+1)
+		args = append(args, allowedNS)
+	}
 	if isActive, ok := updates["is_active"].(bool); ok {
 		query += fmt.Sprintf(", is_active = $%d", len(args)+1)
 		args = append(args, isActive)
 	}
 
-	query += " WHERE id = $1 RETURNING id, name, email, phone, role, is_active, created_at, updated_at"
+	query += " WHERE id = $1 RETURNING id, name, email, phone, role, allowed_namespaces, is_active, created_at, updated_at"
 
 	var user User
 	if err := r.db.QueryRowx(query, args...).StructScan(&user); err != nil {

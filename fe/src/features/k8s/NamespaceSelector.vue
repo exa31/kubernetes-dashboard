@@ -1,18 +1,32 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import Select from 'primevue/select'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
-import { useK8sStore } from '@/stores'
+import { useAuthStore, useK8sStore } from '@/stores'
 
 import CreateNamespaceDialog from './CreateNamespaceDialog.vue'
 
+const authStore = useAuthStore()
 const k8sStore = useK8sStore()
 const { namespaces, selectedNamespace, isLoading } = storeToRefs(k8sStore)
 const showCreateDialog = ref(false)
 
 onMounted(() => {
   k8sStore.fetchNamespaces()
+})
+
+const accessibleNamespaces = computed(() => {
+  return namespaces.value.filter((ns) => authStore.canReadNamespace(ns.name))
+})
+
+watch(accessibleNamespaces, (accessible) => {
+  if (accessible.length > 0) {
+    const isCurrentAllowed = accessible.some((ns) => ns.name === selectedNamespace.value)
+    if (!isCurrentAllowed) {
+      k8sStore.setNamespace(accessible[0].name)
+    }
+  }
 })
 
 const onSelectChange = (val: string) => {
@@ -36,7 +50,7 @@ const onNamespaceCreated = async (name: string) => {
 
     <Select
       :model-value="selectedNamespace"
-      :options="namespaces"
+      :options="accessibleNamespaces"
       option-label="name"
       option-value="name"
       filter
@@ -66,7 +80,7 @@ const onNamespaceCreated = async (name: string) => {
         </div>
       </template>
 
-      <template #footer>
+      <template v-if="authStore.isAdmin" #footer>
         <div class="p-1.5 border-t border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/90">
           <button
             type="button"
@@ -81,6 +95,7 @@ const onNamespaceCreated = async (name: string) => {
     </Select>
 
     <button
+      v-if="authStore.isAdmin"
       type="button"
       class="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-100 hover:bg-sky-500/10 dark:bg-slate-800 dark:hover:bg-sky-500/20 text-slate-500 hover:text-sky-500 dark:text-slate-400 dark:hover:text-sky-400 border border-slate-200 dark:border-slate-700/60 transition cursor-pointer shrink-0"
       title="Create New Namespace"
@@ -90,6 +105,7 @@ const onNamespaceCreated = async (name: string) => {
     </button>
 
     <CreateNamespaceDialog
+      v-if="authStore.isAdmin"
       v-model:visible="showCreateDialog"
       @created="onNamespaceCreated"
     />

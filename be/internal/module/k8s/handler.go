@@ -3,6 +3,7 @@ package k8smodule
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	"golang/pkg/errors"
 	"golang/pkg/response"
@@ -40,7 +41,31 @@ func (h *K8sHandler) ListNamespaces() fiber.Handler {
 		if err != nil {
 			return err
 		}
-		return response.SuccessResponse(c, namespaces, "Namespaces retrieved successfully")
+
+		role, _ := c.Locals("role").(string)
+		if strings.EqualFold(role, "admin") {
+			return response.SuccessResponse(c, namespaces, "Namespaces retrieved successfully")
+		}
+
+		allowedNS, _ := c.Locals("allowed_namespaces").(string)
+		allowedNS = strings.TrimSpace(allowedNS)
+		if allowedNS == "" || allowedNS == "*" {
+			return response.SuccessResponse(c, namespaces, "Namespaces retrieved successfully")
+		}
+
+		allowedMap := make(map[string]bool)
+		for _, ns := range strings.Split(allowedNS, ",") {
+			allowedMap[strings.TrimSpace(strings.ToLower(ns))] = true
+		}
+
+		filtered := make([]NamespaceDTO, 0, len(namespaces))
+		for _, ns := range namespaces {
+			if allowedMap["*"] || allowedMap[strings.ToLower(ns.Name)] {
+				filtered = append(filtered, ns)
+			}
+		}
+
+		return response.SuccessResponse(c, filtered, "Namespaces retrieved successfully")
 	}
 }
 

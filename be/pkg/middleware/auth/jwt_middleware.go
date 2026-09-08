@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"encoding/json"
+	"fmt"
 	"strings"
 
 	"golang/pkg/auth"
@@ -68,6 +70,7 @@ func AuthMiddleware(jwtService *auth.JWTService) fiber.Handler {
 		c.Locals("user_id", claims.UserID)
 		c.Locals("email", claims.Email)
 		c.Locals("role", claims.Role)
+		c.Locals("allowed_namespaces", claims.AllowedNamespaces)
 		c.Locals("token_id", claims.TokenID)
 		c.Locals("claims", claims)
 
@@ -92,6 +95,7 @@ func OptionalAuthMiddleware(jwtService *auth.JWTService) fiber.Handler {
 			c.Locals("user_id", claims.UserID)
 			c.Locals("email", claims.Email)
 			c.Locals("role", claims.Role)
+			c.Locals("allowed_namespaces", claims.AllowedNamespaces)
 			c.Locals("token_id", claims.TokenID)
 			c.Locals("claims", claims)
 		}
@@ -173,6 +177,93 @@ func GetRole(c *fiber.Ctx) (string, error) {
 	return role, nil
 }
 
+// GetAllowedNamespaces extracts allowed namespaces string from context
+func GetAllowedNamespaces(c *fiber.Ctx) string {
+	if ns, ok := c.Locals("allowed_namespaces").(string); ok && ns != "" {
+		return ns
+	}
+	return "*"
+}
+
+// IsNamespacePermitted checks if a role and allowed_namespaces string allow reading or writing a given namespace
+func IsNamespacePermitted(role string, allowedNamespaces string, targetNamespace string, isWrite bool) (bool, string) {
+	if strings.EqualFold(role, "admin") {
+		return true, ""
+	}
+
+	if isWrite && strings.EqualFold(role, "viewer") {
+		return false, "Viewer role is read-only and cannot mutate cluster resources"
+	}
+
+	targetNamespace = strings.TrimSpace(targetNamespace)
+	if targetNamespace == "" {
+		if isWrite {
+			return false, "Cluster-wide mutations require admin role"
+		}
+		return true, ""
+	}
+
+	// System namespaces: DevOps and Viewer cannot mutate them
+	if isWrite {
+		systemNamespaces := []string{"kube-system", "kube-public", "kube-node-lease"}
+		for _, sys := range systemNamespaces {
+			if strings.EqualFold(targetNamespace, sys) {
+				return false, fmt.Sprintf("System namespace '%s' is protected and cannot be modified by DevOps", targetNamespace)
+			}
+		}
+	}
+
+	allowedNamespaces = strings.TrimSpace(allowedNamespaces)
+	if allowedNamespaces == "" || allowedNamespaces == "*" {
+		return true, ""
+	}
+
+	// Comma-separated matching
+	for _, ns := range strings.Split(allowedNamespaces, ",") {
+		ns = strings.TrimSpace(ns)
+		if ns == "*" || strings.EqualFold(ns, targetNamespace) {
+			return true, ""
+		}
+	}
+
+	action := "access"
+	if isWrite {
+		action = "modify resources in"
+	}
+	return false, fmt.Sprintf("Access denied: you do not have permission to %s namespace '%s'", action, targetNamespace)
+}
+
+// RequireNamespaceAccess checks namespace access for read or write operations
+func RequireNamespaceAccess(isWrite bool) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		role, _ := GetRole(c)
+		allowedNS := GetAllowedNamespaces(c)
+
+		// Extract target namespace
+		targetNS := c.Params("namespace")
+		if targetNS == "" {
+			targetNS = c.Query("namespace")
+		}
+
+		// If still empty and it's a POST/PUT body with namespace
+		if targetNS == "" && isWrite && (c.Method() == fiber.MethodPost || c.Method() == fiber.MethodPut) {
+			var bodyMap map[string]interface{}
+			if err := json.Unmarshal(c.Body(), &bodyMap); err == nil {
+				if ns, ok := bodyMap["namespace"].(string); ok {
+					targetNS = ns
+				}
+			}
+		}
+
+		permitted, reason := IsNamespacePermitted(role, allowedNS, targetNS, isWrite)
+		if !permitted {
+			return customErrors.Forbidden(reason)
+		}
+
+		return c.Next()
+	}
+}
+
 // RequireRole creates an RBAC middleware ensuring the authenticated user has one of allowed roles.
 func RequireRole(allowedRoles ...string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
@@ -190,3 +281,4 @@ func RequireRole(allowedRoles ...string) fiber.Handler {
 		return customErrors.Forbidden("Access denied: insufficient permissions")
 	}
 }
+

@@ -15,9 +15,10 @@ import DeploymentEditorDialog from '@/features/k8s/DeploymentEditorDialog.vue'
 import PodLogsDialog from '@/features/k8s/PodLogsDialog.vue'
 import ResourceYamlDialog from '@/features/k8s/ResourceYamlDialog.vue'
 import WebTerminalDialog from '@/features/k8s/WebTerminalDialog.vue'
-import { useK8sStore } from '@/stores'
+import { useAuthStore, useK8sStore } from '@/stores'
 import type { DaemonSetItem, DeploymentItem, PodItem, StatefulSetItem } from '@/types'
 
+const authStore = useAuthStore()
 const k8sStore = useK8sStore()
 const confirm = useConfirm()
 const toast = useToast()
@@ -31,6 +32,8 @@ const {
   isLoading,
   isActionLoading,
 } = storeToRefs(k8sStore)
+
+const canMutate = computed(() => authStore.canMutateNamespace(selectedNamespace.value))
 
 // Active tab: deployments | statefulsets | daemonsets | pods
 const activeTab = ref<'deployments' | 'statefulsets' | 'daemonsets' | 'pods'>('deployments')
@@ -420,6 +423,24 @@ function getPhaseColor(phase: string, reason?: string) {
       </button>
     </div>
 
+    <!-- Read-Only Notice Banner -->
+    <div
+      v-if="!canMutate"
+      class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between text-xs text-slate-300 shadow-sm"
+    >
+      <div class="flex items-center gap-2.5">
+        <i class="pi pi-shield text-amber-400 text-sm"></i>
+        <span>
+          <b class="text-white uppercase font-mono">{{ authStore.userRole }}</b> Mode:
+          {{ authStore.isViewer ? 'Viewer role is restricted to read-only observability.' : 'Namespace ' + selectedNamespace + ' is outside your DevOps allowed boundary.' }}
+          Mutating actions (scale, restart, edit, delete, shell) are disabled.
+        </span>
+      </div>
+      <span class="px-2.5 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400 border border-slate-700">
+        Read-Only
+      </span>
+    </div>
+
     <!-- Workload Navigation Tabs -->
     <div class="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
       <button
@@ -533,18 +554,18 @@ function getPhaseColor(phase: string, reason?: string) {
               <div class="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-lg border border-slate-700">
                 <button
                   type="button"
-                  class="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition text-[10px] disabled:opacity-30"
-                  :disabled="isScaling[data.name] || data.replicas <= 0"
-                  title="Scale down (-1)"
+                  class="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition text-[10px] disabled:opacity-30 disabled:cursor-not-allowed"
+                  :disabled="!canMutate || isScaling[data.name] || data.replicas <= 0"
+                  :title="!canMutate ? 'Read-only: insufficient permissions' : 'Scale down (-1)'"
                   @click="quickScaleDeployment(data, data.replicas - 1)"
                 >
                   <i class="pi pi-minus"></i>
                 </button>
                 <button
                   type="button"
-                  class="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition text-[10px] disabled:opacity-30"
-                  :disabled="isScaling[data.name]"
-                  title="Scale up (+1)"
+                  class="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition text-[10px] disabled:opacity-30 disabled:cursor-not-allowed"
+                  :disabled="!canMutate || isScaling[data.name]"
+                  :title="!canMutate ? 'Read-only: insufficient permissions' : 'Scale up (+1)'"
                   @click="quickScaleDeployment(data, data.replicas + 1)"
                 >
                   <i class="pi pi-plus"></i>
@@ -622,8 +643,9 @@ function getPhaseColor(phase: string, reason?: string) {
                 label="Edit"
                 icon="pi pi-file-edit"
                 size="small"
-                class="btn-blue text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer"
-                title="Edit replicas & containers"
+                class="btn-blue text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                :disabled="!canMutate"
+                :title="!canMutate ? 'Read-only: cannot edit deployment' : 'Edit replicas & containers'"
                 @click="openEditor(data)"
               />
 
@@ -631,9 +653,10 @@ function getPhaseColor(phase: string, reason?: string) {
               <Button
                 icon="pi pi-refresh"
                 size="small"
-                class="btn-amber text-xs px-2 py-1.5 rounded-lg active:scale-95 cursor-pointer"
+                class="btn-amber text-xs px-2 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 :loading="isActionLoading"
-                title="Trigger Rollout Restart"
+                :disabled="!canMutate"
+                :title="!canMutate ? 'Read-only: cannot restart deployment' : 'Trigger Rollout Restart'"
                 @click="restartDeployment(data)"
               />
             </div>
@@ -739,9 +762,10 @@ function getPhaseColor(phase: string, reason?: string) {
                 label="Restart"
                 icon="pi pi-refresh"
                 size="small"
-                class="btn-amber text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer"
+                class="btn-amber text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 :loading="isActionLoading"
-                title="Rollout Restart"
+                :disabled="!canMutate"
+                :title="!canMutate ? 'Read-only: cannot restart statefulset' : 'Rollout Restart'"
                 @click="restartStatefulSet(data)"
               />
             </div>
@@ -825,9 +849,10 @@ function getPhaseColor(phase: string, reason?: string) {
                 label="Restart"
                 icon="pi pi-refresh"
                 size="small"
-                class="btn-amber text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer"
+                class="btn-amber text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 :loading="isActionLoading"
-                title="Rollout Restart"
+                :disabled="!canMutate"
+                :title="!canMutate ? 'Read-only: cannot restart daemonset' : 'Rollout Restart'"
                 @click="restartDaemonSet(data)"
               />
             </div>
@@ -969,8 +994,9 @@ function getPhaseColor(phase: string, reason?: string) {
                 label="Shell"
                 icon="pi pi-terminal"
                 size="small"
-                class="btn-emerald text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer"
-                title="Open interactive in-browser shell"
+                class="btn-emerald text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                :disabled="!canMutate"
+                :title="!canMutate ? 'Read-only: terminal shell restricted' : 'Open interactive in-browser shell'"
                 @click="openTerminalForPod(data)"
               />
 
@@ -998,9 +1024,10 @@ function getPhaseColor(phase: string, reason?: string) {
               <Button
                 icon="pi pi-trash"
                 size="small"
-                class="btn-rose text-xs px-2 py-1.5 rounded-lg active:scale-95 cursor-pointer"
+                class="btn-rose text-xs px-2 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 :loading="isActionLoading"
-                title="Redeploy / Delete Pod (triggers restart)"
+                :disabled="!canMutate"
+                :title="!canMutate ? 'Read-only: cannot delete or redeploy pod' : 'Redeploy / Delete Pod (triggers restart)'"
                 @click="deletePodConfirm(data)"
               />
             </div>

@@ -21,6 +21,35 @@ export const useAuthStore = defineStore('auth', () => {
   const isDevOps = computed(() => user.value?.role === 'devops' || user.value?.role === 'admin')
   const isViewer = computed(() => user.value?.role === 'viewer')
 
+  const allowedNamespaces = computed(() => user.value?.allowed_namespaces || '*')
+  const allowedNamespacesList = computed<string[]>(() => {
+    const raw = (user.value?.allowed_namespaces || '*').trim()
+    if (!raw || raw === '*') return ['*']
+    return raw.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
+  })
+
+  const systemNamespaces = ['kube-system', 'kube-public', 'kube-node-lease']
+
+  function canReadNamespace(targetNamespace?: string): boolean {
+    if (!targetNamespace) return true
+    if (isAdmin.value) return true
+    if (allowedNamespacesList.value.includes('*')) return true
+    return allowedNamespacesList.value.includes(targetNamespace.toLowerCase())
+  }
+
+  function canMutateNamespace(targetNamespace?: string): boolean {
+    if (!targetNamespace || !isAuthenticated.value) return false
+    if (isViewer.value) return false
+    if (isAdmin.value) return true
+
+    // DevOps: block system namespaces and check allowed list
+    if (systemNamespaces.includes(targetNamespace.toLowerCase())) {
+      return false
+    }
+    if (allowedNamespacesList.value.includes('*')) return true
+    return allowedNamespacesList.value.includes(targetNamespace.toLowerCase())
+  }
+
   async function login(credentials: LoginCredentials): Promise<void> {
     isLoading.value = true
     try {
@@ -82,6 +111,10 @@ export const useAuthStore = defineStore('auth', () => {
     isAdmin,
     isDevOps,
     isViewer,
+    allowedNamespaces,
+    allowedNamespacesList,
+    canReadNamespace,
+    canMutateNamespace,
     login,
     checkAuth,
     logout,

@@ -33,11 +33,12 @@ type JWTConfig struct {
 
 // JWTClaims represents the JWT claims structure
 type JWTClaims struct {
-	UserID    string    `json:"user_id"`
-	Email     string    `json:"email"`
-	Role      string    `json:"role"`
-	TokenType TokenType `json:"token_type"`
-	TokenID   string    `json:"token_id"` // JTI for token revocation
+	UserID            string    `json:"user_id"`
+	Email             string    `json:"email"`
+	Role              string    `json:"role"`
+	AllowedNamespaces string    `json:"allowed_namespaces,omitempty"`
+	TokenType         TokenType `json:"token_type"`
+	TokenID           string    `json:"token_id"` // JTI for token revocation
 	jwt.RegisteredClaims
 }
 
@@ -71,20 +72,24 @@ func (j *JWTService) hasRedis() bool {
 }
 
 // GenerateTokenPair generates both access and refresh tokens
-func (j *JWTService) GenerateTokenPair(userID, email string, role ...string) (*TokenPair, error) {
+func (j *JWTService) GenerateTokenPair(userID, email string, roleAndNamespaces ...string) (*TokenPair, error) {
 	userRole := "viewer"
-	if len(role) > 0 && role[0] != "" {
-		userRole = role[0]
+	allowedNamespaces := "*"
+	if len(roleAndNamespaces) > 0 && roleAndNamespaces[0] != "" {
+		userRole = roleAndNamespaces[0]
+	}
+	if len(roleAndNamespaces) > 1 && roleAndNamespaces[1] != "" {
+		allowedNamespaces = roleAndNamespaces[1]
 	}
 
 	// Generate access token
-	accessToken, accessExp, err := j.generateToken(userID, email, userRole, AccessToken)
+	accessToken, accessExp, err := j.generateToken(userID, email, userRole, allowedNamespaces, AccessToken)
 	if err != nil {
 		return nil, err
 	}
 
 	// Generate refresh token
-	refreshToken, _, err := j.generateToken(userID, email, userRole, RefreshToken)
+	refreshToken, _, err := j.generateToken(userID, email, userRole, allowedNamespaces, RefreshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +103,7 @@ func (j *JWTService) GenerateTokenPair(userID, email string, role ...string) (*T
 }
 
 // generateToken generates a JWT token
-func (j *JWTService) generateToken(userID, email, role string, tokenType TokenType) (string, time.Time, error) {
+func (j *JWTService) generateToken(userID, email, role, allowedNamespaces string, tokenType TokenType) (string, time.Time, error) {
 	var (
 		secret     string
 		duration   time.Duration
@@ -119,11 +124,12 @@ func (j *JWTService) generateToken(userID, email, role string, tokenType TokenTy
 
 	// Create claims
 	claims := JWTClaims{
-		UserID:    userID,
-		Email:     email,
-		Role:      role,
-		TokenType: tokenType,
-		TokenID:   tokenID,
+		UserID:            userID,
+		Email:             email,
+		Role:              role,
+		AllowedNamespaces: allowedNamespaces,
+		TokenType:         tokenType,
+		TokenID:           tokenID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiration),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -212,8 +218,8 @@ func (j *JWTService) RefreshAccessToken(refreshToken string) (*TokenPair, error)
 		return nil, err
 	}
 
-	// Generate new token pair preserving user role
-	return j.GenerateTokenPair(claims.UserID, claims.Email, claims.Role)
+	// Generate new token pair preserving user role & allowed namespaces
+	return j.GenerateTokenPair(claims.UserID, claims.Email, claims.Role, claims.AllowedNamespaces)
 }
 
 // RevokeToken revokes a token by removing it from Redis

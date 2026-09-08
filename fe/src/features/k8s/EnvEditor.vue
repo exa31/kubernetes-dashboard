@@ -5,21 +5,31 @@ import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
 import { computed, ref, watch } from 'vue'
 
-import { useK8sStore } from '@/stores'
+import { useAuthStore, useK8sStore } from '@/stores'
 import type { ConfigMapDetail, SecretDetail } from '@/types'
 import { logger } from '@/utils'
 
-const props = defineProps<{
-  resourceType: 'secret' | 'configmap'
-  detail: SecretDetail | ConfigMapDetail
-}>()
+const props = withDefaults(
+  defineProps<{
+    resourceType: 'secret' | 'configmap'
+    detail: SecretDetail | ConfigMapDetail
+    readOnly?: boolean
+  }>(),
+  {
+    readOnly: false,
+  },
+)
 
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'saved', payload: Record<string, string>): void
 }>()
 
+const authStore = useAuthStore()
 const k8sStore = useK8sStore()
+const isEffectiveReadOnly = computed(
+  () => props.readOnly || !authStore.canMutateNamespace(props.detail.namespace),
+)
 
 // State
 type EditorMode = 'table' | 'dotenv' | 'yaml'
@@ -360,9 +370,17 @@ class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-whit
               {{ detail.name }}
             </h2>
             <span
-class="text-xs px-2 py-0.5 rounded-full font-medium"
-                  :class="resourceType === 'secret' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' : 'bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300'">
+              class="text-xs px-2 py-0.5 rounded-full font-medium"
+              :class="resourceType === 'secret' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' : 'bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300'"
+            >
               {{ resourceType === 'secret' ? (detail.type || 'Secret') : 'ConfigMap' }}
+            </span>
+            <span
+              v-if="isEffectiveReadOnly"
+              class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1"
+            >
+              <i class="pi pi-lock text-[9px]"></i>
+              <span>Read-Only</span>
             </span>
           </div>
           <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2">
@@ -384,6 +402,7 @@ class="text-xs px-2 py-0.5 rounded-full font-medium"
           @click="exportAsDotEnv"
         />
         <Button
+          v-if="!isEffectiveReadOnly"
           label="Import .env"
           icon="pi pi-upload"
           size="small"
@@ -403,6 +422,7 @@ class="text-xs px-2 py-0.5 rounded-full font-medium"
         <div class="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
 
         <Button
+          v-if="!isEffectiveReadOnly"
           label="Save"
           icon="pi pi-check"
           size="small"
@@ -413,7 +433,7 @@ class="text-xs px-2 py-0.5 rounded-full font-medium"
 
         <!-- Save & Rollout Restart if connected deployment detected -->
         <Button
-          v-if="connectedDeployments.length > 0"
+          v-if="!isEffectiveReadOnly && connectedDeployments.length > 0"
           :label="`Save & Restart Pods (${connectedDeployments[0].name})`"
           icon="pi pi-refresh"
           size="small"
@@ -507,6 +527,7 @@ class="text-xs px-2 py-0.5 rounded-full font-medium"
         />
 
         <Button
+          v-if="!isEffectiveReadOnly"
           label="Add Variable"
           icon="pi pi-plus"
           size="small"
@@ -525,7 +546,7 @@ class="text-xs px-2 py-0.5 rounded-full font-medium"
               <th class="py-3 px-4 w-12 text-center">#</th>
               <th class="py-3 px-4 w-2/5">Key / Variable Name</th>
               <th class="py-3 px-4">Value (Plaintext)</th>
-              <th class="py-3 px-4 w-28 text-center">Actions</th>
+              <th v-if="!isEffectiveReadOnly" class="py-3 px-4 w-28 text-center">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
@@ -544,8 +565,9 @@ class="text-xs px-2 py-0.5 rounded-full font-medium"
                 <input
                   v-model="row.key"
                   type="text"
+                  :readonly="isEffectiveReadOnly"
                   placeholder="e.g. DATABASE_PASSWORD"
-                  class="w-full font-mono text-xs font-semibold text-slate-800 dark:text-slate-100 bg-transparent border border-transparent hover:border-slate-300 dark:hover:border-slate-700 focus:border-sky-500 focus:bg-white dark:focus:bg-slate-900 rounded px-2 py-1.5 focus:outline-none transition-all"
+                  class="w-full font-mono text-xs font-semibold text-slate-800 dark:text-slate-100 bg-transparent border border-transparent hover:border-slate-300 dark:hover:border-slate-700 focus:border-sky-500 focus:bg-white dark:focus:bg-slate-900 rounded px-2 py-1.5 focus:outline-none transition-all disabled:opacity-75"
                   @input="syncToDotEnv"
                 />
               </td>
@@ -556,8 +578,9 @@ class="text-xs px-2 py-0.5 rounded-full font-medium"
                   <input
                     v-model="row.value"
                     :type="isRevealed(row.key) ? 'text' : 'password'"
+                    :readonly="isEffectiveReadOnly"
                     placeholder="Value..."
-                    class="w-full font-mono text-xs text-slate-800 dark:text-slate-100 bg-transparent border border-transparent hover:border-slate-300 dark:hover:border-slate-700 focus:border-sky-500 focus:bg-white dark:focus:bg-slate-900 rounded pl-2 pr-16 py-1.5 focus:outline-none transition-all"
+                    class="w-full font-mono text-xs text-slate-800 dark:text-slate-100 bg-transparent border border-transparent hover:border-slate-300 dark:hover:border-slate-700 focus:border-sky-500 focus:bg-white dark:focus:bg-slate-900 rounded pl-2 pr-16 py-1.5 focus:outline-none transition-all disabled:opacity-75"
                     @input="syncToDotEnv"
                   />
                   <!-- Inline tools: Eye toggle & Copy -->
@@ -584,7 +607,7 @@ class="text-xs px-2 py-0.5 rounded-full font-medium"
               </td>
 
               <!-- Actions -->
-              <td class="py-2.5 px-4 text-center">
+              <td v-if="!isEffectiveReadOnly" class="py-2.5 px-4 text-center">
                 <button
                   type="button"
                   class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
@@ -598,10 +621,11 @@ class="text-xs px-2 py-0.5 rounded-full font-medium"
 
             <!-- Empty state -->
             <tr v-if="filteredRows.length === 0">
-              <td colspan="4" class="py-12 text-center text-slate-400">
+              <td :colspan="isEffectiveReadOnly ? 3 : 4" class="py-12 text-center text-slate-400">
                 <i class="pi pi-inbox text-3xl mb-2"></i>
                 <p class="text-sm">No environment variables match your search.</p>
                 <Button
+                  v-if="!isEffectiveReadOnly"
                   label="Add Variable"
                   icon="pi pi-plus"
                   size="small"
@@ -618,6 +642,7 @@ class="text-xs px-2 py-0.5 rounded-full font-medium"
       <div class="mt-4 flex justify-between items-center text-xs text-slate-500">
         <span>Showing {{ filteredRows.length }} of {{ rows.length }} variables</span>
         <button
+          v-if="!isEffectiveReadOnly"
           type="button"
           class="flex items-center gap-1.5 font-semibold text-sky-600 dark:text-sky-400 hover:underline cursor-pointer"
           @click="addRow"
@@ -632,13 +657,14 @@ class="text-xs px-2 py-0.5 rounded-full font-medium"
     <div v-else-if="activeMode === 'dotenv'" class="flex-1 flex flex-col p-6 overflow-hidden">
       <div class="mb-3 flex items-center justify-between text-xs text-slate-500">
         <span>
-          Bulk edit environment variables directly in standard <code class="font-bold text-sky-500">.env</code> syntax. Edits automatically synchronize with the table view.
+          {{ isEffectiveReadOnly ? 'Environment variables view in standard syntax.' : 'Bulk edit environment variables directly in standard .env syntax. Edits automatically synchronize with the table view.' }}
         </span>
         <span class="font-mono">{{ rawDotEnv.split('\n').filter(Boolean).length }} lines</span>
       </div>
       <div class="flex-1 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden relative shadow-inner">
         <textarea
           v-model="rawDotEnv"
+          :readonly="isEffectiveReadOnly"
           spellcheck="false"
           class="w-full h-full p-4 font-mono text-xs bg-slate-950 text-emerald-400 focus:outline-none resize-none leading-relaxed selection:bg-sky-600 selection:text-white"
           placeholder="KEY=VALUE&#10;ANOTHER_KEY=another_value"

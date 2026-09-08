@@ -139,78 +139,67 @@ func (r *Router) registerK8s(api fiber.Router) {
 	k8s := api.Group("/k8s")
 	k8s.Use(authMiddleware.AuthMiddleware(r.JWTService))
 
+	// Cluster-level telemetry (open to all authenticated users)
 	k8s.Get("/cluster-info", handler.GetClusterInfo())
 	k8s.Get("/namespaces", handler.ListNamespaces())
-
-	k8s.Get("/secrets", handler.ListSecrets())
-	k8s.Get("/secrets/:namespace/:name", handler.GetSecret())
-	k8s.Post("/secrets", handler.SaveSecret())
-	k8s.Delete("/secrets/:namespace/:name", handler.DeleteSecret())
-
-	k8s.Get("/configmaps", handler.ListConfigMaps())
-	k8s.Get("/configmaps/:namespace/:name", handler.GetConfigMap())
-	k8s.Post("/configmaps", handler.SaveConfigMap())
-	k8s.Delete("/configmaps/:namespace/:name", handler.DeleteConfigMap())
-
-	k8s.Get("/deployments", handler.ListDeployments())
-	k8s.Get("/deployments/:namespace/:name", handler.GetDeployment())
-	k8s.Put("/deployments/:namespace/:name", handler.UpdateDeployment())
-	k8s.Put("/deployments/:namespace/:name/scale", handler.ScaleDeployment())
-	k8s.Post("/deployments/:namespace/:name/restart", handler.RolloutRestartDeployment())
-	k8s.Get("/deployments/:namespace/:name/pods", handler.GetDeploymentPods())
-
-	k8s.Get("/services", handler.ListServices())
-	k8s.Get("/services/:namespace/:name", handler.GetService())
-
-	k8s.Get("/ingresses", handler.ListIngresses())
-	k8s.Get("/ingresses/:namespace/:name", handler.GetIngress())
-
-	k8s.Get("/cronjobs", handler.ListCronJobs())
-	k8s.Post("/cronjobs", handler.CreateCronJob())
-	k8s.Get("/cronjobs/:namespace/:name", handler.GetCronJob())
-	k8s.Put("/cronjobs/:namespace/:name", handler.UpdateCronJob())
-	k8s.Post("/cronjobs/:namespace/:name/toggle-suspend", handler.ToggleSuspendCronJob())
-	k8s.Post("/cronjobs/:namespace/:name/run", handler.TriggerCronJobNow())
-	k8s.Get("/cronjobs/:namespace/:name/jobs", handler.GetCronJobJobs())
-	k8s.Delete("/cronjobs/:namespace/:name", handler.DeleteCronJob())
-
-	k8s.Get("/events", handler.ListEvents())
-	k8s.Get("/pvcs", handler.ListPVCs())
-	k8s.Get("/pvs", handler.ListPVs())
-
-	k8s.Get("/pods/:namespace/:name/logs", handler.GetPodLogs())
-
-	// Dynamic Resource Manifest Apply
-	k8s.Post("/apply-yaml", handler.ApplyYAML())
-
-	// Cluster Overview & Node Telemetry
 	k8s.Get("/cluster-overview", handler.GetClusterOverview())
 	k8s.Get("/nodes", handler.ListNodes())
-
-	// Pod Management (Deep-Dive & Kill/Redeploy)
-	k8s.Get("/pods", handler.ListPods())
-	k8s.Delete("/pods/:namespace/:name", handler.DeletePod())
-
-	// StatefulSets & DaemonSets Workloads
-	k8s.Get("/statefulsets", handler.ListStatefulSets())
-	k8s.Put("/statefulsets/:namespace/:name/scale", handler.ScaleStatefulSet())
-	k8s.Post("/statefulsets/:namespace/:name/restart", handler.RolloutRestartStatefulSet())
-
-	k8s.Get("/daemonsets", handler.ListDaemonSets())
-	k8s.Post("/daemonsets/:namespace/:name/restart", handler.RolloutRestartDaemonSet())
-
-	// In-Place Live Resource YAML Inspector
-	k8s.Get("/resource-yaml", handler.GetResourceYAML())
-
-	// Enterprise Extensions: Endpoints, Metrics, Namespaces, Quotas, Events Feed
-	k8s.Get("/services/:namespace/:name/endpoints", handler.GetServiceEndpoints())
-	k8s.Get("/metrics/pods", handler.GetPodMetrics())
-	k8s.Post("/namespaces", handler.CreateNamespace())
-	k8s.Delete("/namespaces/:name", handler.DeleteNamespace())
-	k8s.Get("/resource-quotas", handler.GetResourceQuotas())
+	k8s.Get("/events", handler.ListEvents())
 	k8s.Get("/events/feed", handler.ListClusterEvents())
+	k8s.Get("/pvs", handler.ListPVs())
 
-	// Interactive Container Web Terminal WebSocket
+	// Namespace-scoped Read Operations (Read access check)
+	nsRead := k8s.Group("", authMiddleware.RequireNamespaceAccess(false))
+	nsRead.Get("/secrets", handler.ListSecrets())
+	nsRead.Get("/secrets/:namespace/:name", handler.GetSecret())
+	nsRead.Get("/configmaps", handler.ListConfigMaps())
+	nsRead.Get("/configmaps/:namespace/:name", handler.GetConfigMap())
+	nsRead.Get("/deployments", handler.ListDeployments())
+	nsRead.Get("/deployments/:namespace/:name", handler.GetDeployment())
+	nsRead.Get("/deployments/:namespace/:name/pods", handler.GetDeploymentPods())
+	nsRead.Get("/services", handler.ListServices())
+	nsRead.Get("/services/:namespace/:name", handler.GetService())
+	nsRead.Get("/services/:namespace/:name/endpoints", handler.GetServiceEndpoints())
+	nsRead.Get("/ingresses", handler.ListIngresses())
+	nsRead.Get("/ingresses/:namespace/:name", handler.GetIngress())
+	nsRead.Get("/cronjobs", handler.ListCronJobs())
+	nsRead.Get("/cronjobs/:namespace/:name", handler.GetCronJob())
+	nsRead.Get("/cronjobs/:namespace/:name/jobs", handler.GetCronJobJobs())
+	nsRead.Get("/pvcs", handler.ListPVCs())
+	nsRead.Get("/pods", handler.ListPods())
+	nsRead.Get("/pods/:namespace/:name/logs", handler.GetPodLogs())
+	nsRead.Get("/statefulsets", handler.ListStatefulSets())
+	nsRead.Get("/daemonsets", handler.ListDaemonSets())
+	nsRead.Get("/resource-yaml", handler.GetResourceYAML())
+	nsRead.Get("/metrics/pods", handler.GetPodMetrics())
+	nsRead.Get("/resource-quotas", handler.GetResourceQuotas())
+
+	// DevOps & Admin Mutating Operations (RequireRole "admin", "devops" & Write namespace check)
+	devops := k8s.Group("", authMiddleware.RequireRole("admin", "devops"), authMiddleware.RequireNamespaceAccess(true))
+	devops.Post("/secrets", handler.SaveSecret())
+	devops.Delete("/secrets/:namespace/:name", handler.DeleteSecret())
+	devops.Post("/configmaps", handler.SaveConfigMap())
+	devops.Delete("/configmaps/:namespace/:name", handler.DeleteConfigMap())
+	devops.Put("/deployments/:namespace/:name", handler.UpdateDeployment())
+	devops.Put("/deployments/:namespace/:name/scale", handler.ScaleDeployment())
+	devops.Post("/deployments/:namespace/:name/restart", handler.RolloutRestartDeployment())
+	devops.Post("/cronjobs", handler.CreateCronJob())
+	devops.Put("/cronjobs/:namespace/:name", handler.UpdateCronJob())
+	devops.Post("/cronjobs/:namespace/:name/toggle-suspend", handler.ToggleSuspendCronJob())
+	devops.Post("/cronjobs/:namespace/:name/run", handler.TriggerCronJobNow())
+	devops.Delete("/cronjobs/:namespace/:name", handler.DeleteCronJob())
+	devops.Post("/apply-yaml", handler.ApplyYAML())
+	devops.Delete("/pods/:namespace/:name", handler.DeletePod())
+	devops.Put("/statefulsets/:namespace/:name/scale", handler.ScaleStatefulSet())
+	devops.Post("/statefulsets/:namespace/:name/restart", handler.RolloutRestartStatefulSet())
+	devops.Post("/daemonsets/:namespace/:name/restart", handler.RolloutRestartDaemonSet())
+
+	// Admin-Only Cluster Management (RequireRole "admin")
+	adminK8s := k8s.Group("", authMiddleware.RequireRole("admin"))
+	adminK8s.Post("/namespaces", handler.CreateNamespace())
+	adminK8s.Delete("/namespaces/:name", handler.DeleteNamespace())
+
+	// Interactive Container Web Terminal WebSocket (DevOps & Admin with namespace write access)
 	k8s.Use("/ws", func(c *fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {
 			c.Locals("allowed", true)
@@ -218,6 +207,10 @@ func (r *Router) registerK8s(api fiber.Router) {
 		}
 		return fiber.ErrUpgradeRequired
 	})
-	k8s.Get("/ws/exec/:namespace/:pod", handler.ExecContainerTerminal())
+	k8s.Get("/ws/exec/:namespace/:pod",
+		authMiddleware.RequireRole("admin", "devops"),
+		authMiddleware.RequireNamespaceAccess(true),
+		handler.ExecContainerTerminal(),
+	)
 }
 

@@ -3,6 +3,7 @@ export interface AuthUser {
   name: string
   email: string
   role?: 'admin' | 'devops' | 'viewer'
+  allowed_namespaces?: string
   created_at?: string
 }
 

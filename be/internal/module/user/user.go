@@ -9,33 +9,36 @@ import (
 
 // User is the database entity for the user domain.
 type User struct {
-	ID        string         `json:"id" db:"id"`
-	Name      string         `json:"name" db:"name"`
-	Email     string         `json:"email" db:"email"`
-	Phone     sql.NullString `json:"phone" db:"phone"`
-	Password  string         `json:"-" db:"password"`
-	Role      string         `json:"role" db:"role"`
-	IsActive  bool           `json:"is_active" db:"is_active"`
-	CreatedAt time.Time      `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at" db:"updated_at"`
+	ID                string         `json:"id" db:"id"`
+	Name              string         `json:"name" db:"name"`
+	Email             string         `json:"email" db:"email"`
+	Phone             sql.NullString `json:"phone" db:"phone"`
+	Password          string         `json:"-" db:"password"`
+	Role              string         `json:"role" db:"role"`
+	AllowedNamespaces string         `json:"allowed_namespaces" db:"allowed_namespaces"`
+	IsActive          bool           `json:"is_active" db:"is_active"`
+	CreatedAt         time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt         time.Time      `json:"updated_at" db:"updated_at"`
 }
 
 // CreateUserRequest payload.
 type CreateUserRequest struct {
-	Name     string `json:"name" validate:"required,min=3,max=100"`
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=6,max=100"`
-	Role     string `json:"role" validate:"omitempty,oneof=admin devops viewer"`
-	Phone    string `json:"phone" validate:"omitempty,min=10,max=15"`
+	Name              string `json:"name" validate:"required,min=3,max=100"`
+	Email             string `json:"email" validate:"required,email"`
+	Password          string `json:"password" validate:"required,min=6,max=100"`
+	Role              string `json:"role" validate:"omitempty,oneof=admin devops viewer"`
+	AllowedNamespaces string `json:"allowed_namespaces" validate:"omitempty,max=500"`
+	Phone             string `json:"phone" validate:"omitempty,min=10,max=15"`
 }
 
 // UpdateUserRequest payload.
 type UpdateUserRequest struct {
-	Name     string `json:"name" validate:"omitempty,min=3,max=100"`
-	Email    string `json:"email" validate:"omitempty,email"`
-	Role     string `json:"role" validate:"omitempty,oneof=admin devops viewer"`
-	Phone    string `json:"phone" validate:"omitempty,min=10,max=15"`
-	IsActive *bool  `json:"is_active"`
+	Name              string  `json:"name" validate:"omitempty,min=3,max=100"`
+	Email             string  `json:"email" validate:"omitempty,email"`
+	Role              string  `json:"role" validate:"omitempty,oneof=admin devops viewer"`
+	AllowedNamespaces *string `json:"allowed_namespaces" validate:"omitempty,max=500"`
+	Phone             string  `json:"phone" validate:"omitempty,min=10,max=15"`
+	IsActive          *bool   `json:"is_active"`
 }
 
 // ResetPasswordRequest payload.
@@ -45,14 +48,15 @@ type ResetPasswordRequest struct {
 
 // UserResponse is the public representation of a user.
 type UserResponse struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	Email     string    `json:"email"`
-	Role      string    `json:"role"`
-	Phone     string    `json:"phone"`
-	IsActive  bool      `json:"is_active"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID                string    `json:"id"`
+	Name              string    `json:"name"`
+	Email             string    `json:"email"`
+	Role              string    `json:"role"`
+	AllowedNamespaces string    `json:"allowed_namespaces"`
+	Phone             string    `json:"phone"`
+	IsActive          bool      `json:"is_active"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 // UserRepository defines data access for the user domain.
