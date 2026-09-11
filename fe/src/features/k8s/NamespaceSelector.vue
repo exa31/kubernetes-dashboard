@@ -43,7 +43,9 @@ const onNamespaceCreated = async (name: string) => {
 
 <template>
   <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-    <div class="flex items-center gap-1 text-xs font-semibold text-slate-500 dark:text-slate-400 hidden lg:flex">
+    <div
+      class="flex items-center gap-1 text-xs font-semibold text-slate-500 dark:text-slate-400 hidden lg:flex"
+    >
       <i class="pi pi-box text-sky-500 text-xs"></i>
       <span>Namespace:</span>
     </div>
@@ -61,7 +63,10 @@ const onNamespaceCreated = async (name: string) => {
       @update:model-value="onSelectChange"
     >
       <template #value="slotProps">
-        <div v-if="slotProps.value" class="flex items-center gap-2 font-mono text-xs font-bold text-slate-800 dark:text-slate-100">
+        <div
+          v-if="slotProps.value"
+          class="flex items-center gap-2 font-mono text-xs font-bold text-slate-800 dark:text-slate-100"
+        >
           <span class="w-2 h-2 rounded-full bg-sky-500"></span>
           <span>{{ slotProps.value }}</span>
         </div>
@@ -73,7 +78,11 @@ const onNamespaceCreated = async (name: string) => {
           <span class="font-medium text-slate-800 dark:text-slate-200">{{ option.name }}</span>
           <span
             class="text-[10px] px-1.5 py-0.5 rounded font-bold"
-            :class="option.status === 'Active' ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'"
+            :class="
+              option.status === 'Active'
+                ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+            "
           >
             {{ option.status }}
           </span>
@@ -81,7 +90,9 @@ const onNamespaceCreated = async (name: string) => {
       </template>
 
       <template v-if="authStore.isAdmin" #footer>
-        <div class="p-1.5 border-t border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/90">
+        <div
+          class="p-1.5 border-t border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/90"
+        >
           <button
             type="button"
             class="w-full py-1.5 px-2 rounded-lg text-xs font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center gap-1.5 transition cursor-pointer"
@@ -112,5 +123,4 @@ const onNamespaceCreated = async (name: string) => {
   </div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

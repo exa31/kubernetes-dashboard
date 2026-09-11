@@ -14,7 +14,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  namespace: 'default',
+  namespace: 'default'
 })
 
 const emit = defineEmits<{
@@ -54,7 +54,7 @@ const diffLines = computed<DiffLine[]>(() => {
     return newLines.map((line, idx) => ({
       type: line === oldLines[idx] ? 'unchanged' : 'added',
       text: line,
-      newNum: idx + 1,
+      newNum: idx + 1
     }))
   }
 
@@ -78,7 +78,7 @@ const diffLines = computed<DiffLine[]>(() => {
         type: 'unchanged',
         text: oldLines[i - 1],
         oldNum: i,
-        newNum: j,
+        newNum: j
       })
       i--
       j--
@@ -86,14 +86,14 @@ const diffLines = computed<DiffLine[]>(() => {
       result.unshift({
         type: 'added',
         text: newLines[j - 1],
-        newNum: j,
+        newNum: j
       })
       j--
     } else if (i > 0 && (j === 0 || dp[i][j - 1] < dp[i - 1][j])) {
       result.unshift({
         type: 'removed',
         text: oldLines[i - 1],
-        oldNum: i,
+        oldNum: i
       })
       i--
     }
@@ -138,7 +138,7 @@ async function fetchManifest() {
       severity: 'error',
       summary: 'Error Fetching YAML',
       detail: msg,
-      life: 5000,
+      life: 5000
     })
   } finally {
     isLoading.value = false
@@ -156,19 +156,19 @@ async function handleValidateDryRun() {
       const errItem = res.results.find((r) => r.status === 'error')
       validationResult.value = {
         status: 'error',
-        message: errItem?.message || 'YAML validation failed during dry run',
+        message: errItem?.message || 'YAML validation failed during dry run'
       }
     } else {
       validationResult.value = {
         status: 'success',
-        message: `Validation successful: ${res.success_count} resource(s) valid.`,
+        message: `Validation successful: ${res.success_count} resource(s) valid.`
       }
     }
   } catch (err: any) {
     const msg = err?.response?.data?.message || err?.message || 'Dry-run validation failed'
     validationResult.value = {
       status: 'error',
-      message: msg,
+      message: msg
     }
   } finally {
     isValidating.value = false
@@ -188,14 +188,14 @@ async function handleApply() {
         severity: 'error',
         summary: 'Apply Failed',
         detail: errItem?.message || 'Failed to apply manifest changes',
-        life: 5000,
+        life: 5000
       })
     } else {
       toast.add({
         severity: 'success',
         summary: 'Manifest Applied',
         detail: `${props.kind} ${props.name} updated successfully`,
-        life: 4000,
+        life: 4000
       })
       originalYaml.value = yamlContent.value
       isEditing.value = false
@@ -207,7 +207,7 @@ async function handleApply() {
       severity: 'error',
       summary: 'Error',
       detail: msg,
-      life: 5000,
+      life: 5000
     })
   } finally {
     isApplying.value = false
@@ -220,7 +220,7 @@ function handleCopy() {
     severity: 'info',
     summary: 'Copied',
     detail: 'YAML copied to clipboard',
-    life: 2000,
+    life: 2000
   })
 }
 
@@ -250,7 +250,7 @@ watch(
     if (val) {
       fetchManifest()
     }
-  },
+  }
 )
 </script>
 
@@ -260,8 +260,11 @@ watch(
     modal
     :show-header="false"
     :pt="{
-      root: { class: 'border-none p-0 overflow-hidden w-[90vw] max-w-4xl rounded-2xl shadow-2xl bg-slate-950 z-50' },
-      content: { class: 'p-0 overflow-hidden bg-slate-950 flex flex-col max-h-[88vh]' },
+      root: {
+        class:
+          'border-none p-0 overflow-hidden w-[90vw] max-w-4xl rounded-2xl shadow-2xl bg-slate-950 z-50'
+      },
+      content: { class: 'p-0 overflow-hidden bg-slate-950 flex flex-col max-h-[88vh]' }
     }"
     @update:visible="handleClose"
   >
@@ -270,13 +273,19 @@ watch(
       class="flex items-center justify-between px-6 py-4 bg-slate-900 border-b border-slate-800 shrink-0"
     >
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+        <div
+          class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400"
+        >
           <i class="pi pi-file-edit text-base"></i>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <span class="font-bold text-white text-base tracking-wide">{{ props.kind }} Manifest</span>
-            <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700">
+            <span class="font-bold text-white text-base tracking-wide"
+              >{{ props.kind }} Manifest</span
+            >
+            <span
+              class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700"
+            >
               {{ apiVersion || 'k8s' }}
             </span>
             <span
@@ -308,7 +317,11 @@ watch(
           <button
             type="button"
             class="px-2.5 py-1 rounded text-xs transition font-medium flex items-center gap-1.5 cursor-pointer"
-            :class="activeTab === 'editor' ? 'bg-slate-700 text-white shadow-xs font-semibold' : 'text-slate-400 hover:text-white'"
+            :class="
+              activeTab === 'editor'
+                ? 'bg-slate-700 text-white shadow-xs font-semibold'
+                : 'text-slate-400 hover:text-white'
+            "
             @click="activeTab = 'editor'"
           >
             <i class="pi pi-code text-[11px]"></i>
@@ -317,7 +330,11 @@ watch(
           <button
             type="button"
             class="px-2.5 py-1 rounded text-xs transition font-medium flex items-center gap-1.5 cursor-pointer"
-            :class="activeTab === 'diff' ? 'bg-slate-700 text-white shadow-xs font-semibold' : 'text-slate-400 hover:text-white'"
+            :class="
+              activeTab === 'diff'
+                ? 'bg-slate-700 text-white shadow-xs font-semibold'
+                : 'text-slate-400 hover:text-white'
+            "
             @click="activeTab = 'diff'"
           >
             <i class="pi pi-arrows-h text-[11px]"></i>
@@ -336,9 +353,11 @@ watch(
           v-if="canMutate"
           type="button"
           class="px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 border cursor-pointer"
-          :class="isEditing
-            ? 'bg-amber-500 text-slate-950 border-amber-400 font-semibold'
-            : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'"
+          :class="
+            isEditing
+              ? 'bg-amber-500 text-slate-950 border-amber-400 font-semibold'
+              : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
+          "
           @click="isEditing = !isEditing"
         >
           <i :class="isEditing ? 'pi pi-lock' : 'pi pi-pencil'" class="text-xs"></i>
@@ -392,26 +411,45 @@ watch(
     <div
       v-if="validationResult"
       class="px-6 py-2.5 text-xs font-mono flex items-center justify-between border-b"
-      :class="validationResult.status === 'success'
-        ? 'bg-emerald-950/60 border-emerald-800 text-emerald-300'
-        : 'bg-rose-950/60 border-rose-800 text-rose-300'"
+      :class="
+        validationResult.status === 'success'
+          ? 'bg-emerald-950/60 border-emerald-800 text-emerald-300'
+          : 'bg-rose-950/60 border-rose-800 text-rose-300'
+      "
     >
       <div class="flex items-center gap-2">
-        <i :class="validationResult.status === 'success' ? 'pi pi-check-circle' : 'pi pi-exclamation-circle'"></i>
+        <i
+          :class="
+            validationResult.status === 'success'
+              ? 'pi pi-check-circle'
+              : 'pi pi-exclamation-circle'
+          "
+        ></i>
         <span>{{ validationResult.message }}</span>
       </div>
-      <button class="text-xs opacity-70 hover:opacity-100 cursor-pointer" @click="validationResult = null">
+      <button
+        class="text-xs opacity-70 hover:opacity-100 cursor-pointer"
+        @click="validationResult = null"
+      >
         <i class="pi pi-times"></i>
       </button>
     </div>
 
     <!-- VIEW 1: Editor Area with Line Numbers -->
-    <div v-if="activeTab === 'editor'" class="relative flex flex-1 overflow-hidden bg-[#0c1220] min-h-[380px] max-h-[560px]">
+    <div
+      v-if="activeTab === 'editor'"
+      class="relative flex flex-1 overflow-hidden bg-[#0c1220] min-h-[380px] max-h-[560px]"
+    >
       <!-- Loading State -->
-      <div v-if="isLoading" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-10">
+      <div
+        v-if="isLoading"
+        class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-10"
+      >
         <div class="flex flex-col items-center gap-3">
           <i class="pi pi-spin pi-spinner text-2xl text-amber-400"></i>
-          <span class="text-xs text-slate-400 font-mono">Fetching {{ props.kind }} manifest...</span>
+          <span class="text-xs text-slate-400 font-mono"
+            >Fetching {{ props.kind }} manifest...</span
+          >
         </div>
       </div>
 
@@ -436,11 +474,16 @@ watch(
     </div>
 
     <!-- VIEW 2: Visual Side-by-Side / Unified Diff Viewer -->
-    <div v-else class="flex-1 overflow-auto bg-[#0c1220] min-h-[380px] max-h-[560px] font-mono text-xs p-2">
+    <div
+      v-else
+      class="flex-1 overflow-auto bg-[#0c1220] min-h-[380px] max-h-[560px] font-mono text-xs p-2"
+    >
       <div v-if="!isModified" class="py-16 text-center text-slate-500">
         <i class="pi pi-check-circle text-3xl mb-2 text-emerald-500"></i>
         <h4 class="font-bold text-slate-300">No Changes Detected</h4>
-        <p class="text-xs text-slate-500 mt-1">The working copy exactly matches the active cluster manifest.</p>
+        <p class="text-xs text-slate-500 mt-1">
+          The working copy exactly matches the active cluster manifest.
+        </p>
       </div>
 
       <div v-else class="space-y-0.5">
@@ -449,24 +492,30 @@ watch(
           :key="idx"
           class="flex items-stretch font-mono text-xs leading-relaxed px-2 py-0.5 rounded-sm"
           :class="{
-            'bg-emerald-950/40 text-emerald-300 border-l-2 border-emerald-500': diff.type === 'added',
-            'bg-rose-950/40 text-rose-300 border-l-2 border-rose-500 opacity-80': diff.type === 'removed',
-            'text-slate-400 hover:bg-slate-900/40': diff.type === 'unchanged',
+            'bg-emerald-950/40 text-emerald-300 border-l-2 border-emerald-500':
+              diff.type === 'added',
+            'bg-rose-950/40 text-rose-300 border-l-2 border-rose-500 opacity-80':
+              diff.type === 'removed',
+            'text-slate-400 hover:bg-slate-900/40': diff.type === 'unchanged'
           }"
         >
           <!-- Line markers -->
-          <div class="w-16 flex items-center justify-between text-[10px] text-slate-600 select-none pr-3 shrink-0">
+          <div
+            class="w-16 flex items-center justify-between text-[10px] text-slate-600 select-none pr-3 shrink-0"
+          >
             <span class="w-7 text-right">{{ diff.oldNum || '' }}</span>
             <span class="w-7 text-right">{{ diff.newNum || '' }}</span>
           </div>
 
           <!-- Diff Sign -->
           <span
-class="w-5 text-center shrink-0 font-bold" :class="{
-            'text-emerald-400': diff.type === 'added',
-            'text-rose-400': diff.type === 'removed',
-            'text-slate-700': diff.type === 'unchanged',
-          }">
+            class="w-5 text-center shrink-0 font-bold"
+            :class="{
+              'text-emerald-400': diff.type === 'added',
+              'text-rose-400': diff.type === 'removed',
+              'text-slate-700': diff.type === 'unchanged'
+            }"
+          >
             {{ diff.type === 'added' ? '+' : diff.type === 'removed' ? '-' : ' ' }}
           </span>
 

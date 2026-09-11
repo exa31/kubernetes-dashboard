@@ -96,6 +96,24 @@ export interface RolloutRestartResponse {
   restart_at: string
 }
 
+export interface DeploymentRevision {
+  revision: number
+  replicaset: string
+  images: string[]
+  change_cause: string
+  replicas: number
+  created_at: string
+  age: string
+  is_current: boolean
+}
+
+export interface RollbackDeploymentResponse {
+  message: string
+  deployment: string
+  namespace: string
+  to_revision: number
+}
+
 export interface ContainerEnvVar {
   name: string
   value?: string
@@ -424,6 +442,3 @@ export interface ResourceQuotaItem {
   age: string
   created_at: string
 }
-
-
-

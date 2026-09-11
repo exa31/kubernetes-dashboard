@@ -41,5 +41,5 @@ export const CRON_PRESETS = [
   { label: 'Every hour (:00)', value: '0 * * * *' },
   { label: 'Every day at midnight (00:00)', value: '0 0 * * *' },
   { label: 'Every week on Sunday (00:00)', value: '0 0 * * 0' },
-  { label: 'Every 1st of month (00:00)', value: '0 0 1 * *' },
+  { label: 'Every 1st of month (00:00)', value: '0 0 1 * *' }
 ]

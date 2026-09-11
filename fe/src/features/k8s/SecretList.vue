@@ -42,7 +42,7 @@ const filteredSecrets = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   if (!q) return secrets.value
   return secrets.value.filter(
-    (s) => s.name.toLowerCase().includes(q) || s.type.toLowerCase().includes(q),
+    (s) => s.name.toLowerCase().includes(q) || s.type.toLowerCase().includes(q)
   )
 })
 
@@ -64,11 +64,11 @@ const deleteSecret = (item: SecretItem) => {
     rejectProps: {
       label: 'Cancel',
       severity: 'secondary',
-      outlined: true,
+      outlined: true
     },
     acceptProps: {
       label: 'Delete',
-      severity: 'danger',
+      severity: 'danger'
     },
     accept: async () => {
       try {
@@ -77,17 +77,17 @@ const deleteSecret = (item: SecretItem) => {
           severity: 'success',
           summary: 'Deleted',
           detail: `Secret '${item.name}' deleted successfully`,
-          life: 3000,
+          life: 3000
         })
       } catch (err: unknown) {
         toast.add({
           severity: 'error',
           summary: 'Delete Failed',
           detail: err instanceof Error ? err.message : 'Failed to delete Secret',
-          life: 4000,
+          life: 4000
         })
       }
-    },
+    }
   })
 }
 
@@ -115,13 +115,13 @@ const createSecret = async () => {
       name: newSecretName.value.trim(),
       namespace: selectedNamespace.value,
       type: newSecretType.value,
-      data,
+      data
     })
     toast.add({
       severity: 'success',
       summary: 'Success',
       detail: `Secret '${newSecretName.value.trim()}' created successfully`,
-      life: 3000,
+      life: 3000
     })
     isCreateOpen.value = false
     newSecretName.value = ''
@@ -130,7 +130,7 @@ const createSecret = async () => {
       severity: 'error',
       summary: 'Create Failed',
       detail: err instanceof Error ? err.message : 'Failed to create Secret',
-      life: 4000,
+      life: 4000
     })
   }
 }
@@ -141,23 +141,24 @@ const createSecret = async () => {
     <!-- Top toolbar -->
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
+        <h1
+          class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5"
+        >
           <i class="pi pi-lock text-amber-500"></i>
           <span>Secrets</span>
         </h1>
         <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">
-          Manage decoded environment variables and credentials in <strong class="text-slate-700 dark:text-slate-300 font-mono">{{ selectedNamespace }}</strong>
+          Manage decoded environment variables and credentials in
+          <strong class="text-slate-700 dark:text-slate-300 font-mono">{{
+            selectedNamespace
+          }}</strong>
         </p>
       </div>
 
       <div class="flex items-center gap-3">
         <IconField>
           <InputIcon class="pi pi-search" />
-          <InputText
-            v-model="searchQuery"
-            placeholder="Search secrets..."
-            class="text-sm w-64"
-          />
+          <InputText v-model="searchQuery" placeholder="Search secrets..." class="text-sm w-64" />
         </IconField>
 
         <Button
@@ -189,16 +190,22 @@ const createSecret = async () => {
       <div class="flex items-center gap-2">
         <i class="pi pi-lock text-sm"></i>
         <span>
-          <strong>Read-Only Mode:</strong> You do not have permission to modify secrets in namespace <strong>{{ selectedNamespace }}</strong>.
+          <strong>Read-Only Mode:</strong> You do not have permission to modify secrets in namespace
+          <strong>{{ selectedNamespace }}</strong
+          >.
         </span>
       </div>
-      <span class="px-2 py-0.5 rounded text-[10px] uppercase font-mono font-semibold bg-amber-500/20 border border-amber-500/30">
+      <span
+        class="px-2 py-0.5 rounded text-[10px] uppercase font-mono font-semibold bg-amber-500/20 border border-amber-500/30"
+      >
         {{ authStore.user?.role || 'Viewer' }}
       </span>
     </div>
 
     <!-- PrimeVue DataTable for Secrets -->
-    <div class="w-full bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+    <div
+      class="w-full bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden"
+    >
       <DataTable
         :value="filteredSecrets"
         :loading="isLoading"
@@ -215,15 +222,20 @@ const createSecret = async () => {
         <Column field="name" header="Name" sortable>
           <template #body="{ data }">
             <div class="flex items-center gap-3 py-1 cursor-pointer">
-              <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold shrink-0">
+              <div
+                class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold shrink-0"
+              >
                 <i class="pi pi-key text-xs"></i>
               </div>
               <div>
-                <div class="font-semibold text-slate-900 dark:text-slate-100 font-mono text-sm hover:text-sky-600 transition-colors">
+                <div
+                  class="font-semibold text-slate-900 dark:text-slate-100 font-mono text-sm hover:text-sky-600 transition-colors"
+                >
                   {{ data.name }}
                 </div>
                 <div class="text-xs text-slate-400 mt-0.5 truncate font-mono">
-                  {{ data.keys.slice(0, 8).join(', ') }}{{ data.keys.length > 8 ? ` +${data.keys.length - 8} more` : '' }}
+                  {{ data.keys.slice(0, 8).join(', ')
+                  }}{{ data.keys.length > 8 ? ` +${data.keys.length - 8} more` : '' }}
                 </div>
               </div>
             </div>
@@ -259,7 +271,12 @@ const createSecret = async () => {
         </Column>
 
         <!-- Actions Column -->
-        <Column header="Actions" header-style="text-align: right" body-style="text-align: right" style="width: 180px">
+        <Column
+          header="Actions"
+          header-style="text-align: right"
+          body-style="text-align: right"
+          style="width: 180px"
+        >
           <template #body="{ data }">
             <div class="flex items-center justify-end gap-1.5" @click.stop>
               <Button
@@ -287,7 +304,9 @@ const createSecret = async () => {
           <div class="py-16 text-center text-slate-400">
             <i class="pi pi-shield text-4xl mb-3 text-slate-300 dark:text-slate-700"></i>
             <h3 class="font-semibold text-slate-700 dark:text-slate-300">No Secrets Found</h3>
-            <p class="text-xs text-slate-500 mt-1">There are no secrets matching your query in namespace {{ selectedNamespace }}.</p>
+            <p class="text-xs text-slate-500 mt-1">
+              There are no secrets matching your query in namespace {{ selectedNamespace }}.
+            </p>
             <Button
               v-if="canMutate"
               label="Create Secret"
@@ -334,9 +353,13 @@ const createSecret = async () => {
       }"
     >
       <!-- Custom Header -->
-      <div class="px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+      <div
+        class="px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between"
+      >
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-base shrink-0">
+          <div
+            class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-base shrink-0"
+          >
             <i class="pi pi-key"></i>
           </div>
           <div>
@@ -359,7 +382,9 @@ const createSecret = async () => {
 
       <form class="p-6 space-y-4" @submit.prevent="createSecret">
         <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+          <label
+            class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
+          >
             Secret Name *
           </label>
           <InputText
@@ -371,7 +396,9 @@ const createSecret = async () => {
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+          <label
+            class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
+          >
             Type
           </label>
           <select
@@ -384,7 +411,9 @@ const createSecret = async () => {
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+          <label
+            class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
+          >
             Initial Environment Variables (.env format)
           </label>
           <textarea
@@ -410,5 +439,4 @@ const createSecret = async () => {
   </div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

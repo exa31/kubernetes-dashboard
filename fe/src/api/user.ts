@@ -33,5 +33,5 @@ export const userApi = {
 
   hardDeleteUser: async (id: string): Promise<void> => {
     await apiClient.delete(`/users/admin/${encodeURIComponent(id)}`)
-  },
+  }
 }

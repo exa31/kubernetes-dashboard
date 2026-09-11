@@ -6,14 +6,16 @@ import type { AuthUser, LoginCredentials } from '@/types'
 import { logger } from '@/utils'
 
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref<AuthUser | null>((() => {
-    try {
-      const saved = localStorage.getItem('kubeenv_user')
-      return saved ? JSON.parse(saved) : null
-    } catch {
-      return null
-    }
-  })())
+  const user = ref<AuthUser | null>(
+    (() => {
+      try {
+        const saved = localStorage.getItem('kubeenv_user')
+        return saved ? JSON.parse(saved) : null
+      } catch {
+        return null
+      }
+    })()
+  )
   const isLoading = ref(false)
   const isAuthenticated = computed(() => !!user.value)
   const userRole = computed(() => user.value?.role || 'viewer')
@@ -25,7 +27,10 @@ export const useAuthStore = defineStore('auth', () => {
   const allowedNamespacesList = computed<string[]>(() => {
     const raw = (user.value?.allowed_namespaces || '*').trim()
     if (!raw || raw === '*') return ['*']
-    return raw.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
+    return raw
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean)
   })
 
   const systemNamespaces = ['kube-system', 'kube-public', 'kube-node-lease']
@@ -117,6 +122,6 @@ export const useAuthStore = defineStore('auth', () => {
     canMutateNamespace,
     login,
     checkAuth,
-    logout,
+    logout
   }
 })

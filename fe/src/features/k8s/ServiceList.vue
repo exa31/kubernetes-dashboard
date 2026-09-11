@@ -52,7 +52,7 @@ const filteredServices = computed(() => {
       s.type.toLowerCase().includes(q) ||
       s.cluster_ip.toLowerCase().includes(q) ||
       (s.external_ip && s.external_ip.toLowerCase().includes(q)) ||
-      s.ports.some((p) => String(p.port).includes(q) || p.name.toLowerCase().includes(q)),
+      s.ports.some((p) => String(p.port).includes(q) || p.name.toLowerCase().includes(q))
   )
 })
 
@@ -66,7 +66,7 @@ async function openDetail(svc: ServiceItem) {
     selectedService.value = {
       ...svc,
       labels: {},
-      annotations: {},
+      annotations: {}
     }
   } finally {
     isLoadingDetail.value = false
@@ -100,23 +100,24 @@ function getTypeSeverity(type: string): 'info' | 'success' | 'warn' | 'secondary
     <!-- Top toolbar -->
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
+        <h1
+          class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5"
+        >
           <i class="pi pi-share-alt text-teal-500"></i>
           <span>Services</span>
         </h1>
         <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">
-          Cluster networking, internal endpoints, and port mappings in <strong class="text-slate-700 dark:text-slate-300 font-mono">{{ selectedNamespace }}</strong>
+          Cluster networking, internal endpoints, and port mappings in
+          <strong class="text-slate-700 dark:text-slate-300 font-mono">{{
+            selectedNamespace
+          }}</strong>
         </p>
       </div>
 
       <div class="flex items-center gap-3">
         <IconField>
           <InputIcon class="pi pi-search" />
-          <InputText
-            v-model="searchQuery"
-            placeholder="Search services..."
-            class="text-sm w-64"
-          />
+          <InputText v-model="searchQuery" placeholder="Search services..." class="text-sm w-64" />
         </IconField>
 
         <Button
@@ -132,7 +133,9 @@ function getTypeSeverity(type: string): 'info' | 'success' | 'warn' | 'secondary
     </div>
 
     <!-- PrimeVue DataTable for Services -->
-    <div class="w-full rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden bg-white dark:bg-slate-950">
+    <div
+      class="w-full rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden bg-white dark:bg-slate-950"
+    >
       <DataTable
         :value="filteredServices"
         :loading="isLoading"
@@ -149,16 +152,18 @@ function getTypeSeverity(type: string): 'info' | 'success' | 'warn' | 'secondary
         <Column field="name" header="Service Name" sortable>
           <template #body="{ data }">
             <div class="flex items-center gap-3 py-1 cursor-pointer">
-              <div class="w-8 h-8 rounded-lg bg-teal-500/10 text-teal-500 flex items-center justify-center font-bold shrink-0">
+              <div
+                class="w-8 h-8 rounded-lg bg-teal-500/10 text-teal-500 flex items-center justify-center font-bold shrink-0"
+              >
                 <i class="pi pi-share-alt text-xs"></i>
               </div>
               <div>
-                <div class="font-semibold text-slate-900 dark:text-slate-100 font-mono text-sm hover:text-teal-600 transition-colors">
+                <div
+                  class="font-semibold text-slate-900 dark:text-slate-100 font-mono text-sm hover:text-teal-600 transition-colors"
+                >
                   {{ data.name }}
                 </div>
-                <div class="text-xs text-slate-400 mt-0.5">
-                  Age: {{ data.age }}
-                </div>
+                <div class="text-xs text-slate-400 mt-0.5">Age: {{ data.age }}</div>
               </div>
             </div>
           </template>
@@ -178,7 +183,10 @@ function getTypeSeverity(type: string): 'info' | 'success' | 'warn' | 'secondary
         <!-- IP / Target Column -->
         <Column header="Cluster IP / Target" style="width: 220px">
           <template #body="{ data }">
-            <div v-if="data.cluster_ip" class="flex items-center gap-1.5 font-mono text-xs text-slate-700 dark:text-slate-300">
+            <div
+              v-if="data.cluster_ip"
+              class="flex items-center gap-1.5 font-mono text-xs text-slate-700 dark:text-slate-300"
+            >
               <span>{{ data.cluster_ip }}</span>
               <button
                 type="button"
@@ -189,7 +197,11 @@ function getTypeSeverity(type: string): 'info' | 'success' | 'warn' | 'secondary
                 <i class="pi pi-copy"></i>
               </button>
             </div>
-            <div v-else-if="data.external_ip" class="font-mono text-xs text-slate-500 truncate max-w-xs" :title="data.external_ip">
+            <div
+              v-else-if="data.external_ip"
+              class="font-mono text-xs text-slate-500 truncate max-w-xs"
+              :title="data.external_ip"
+            >
               {{ data.external_ip }}
             </div>
             <span v-else class="text-slate-400 text-xs italic">None</span>
@@ -205,7 +217,12 @@ function getTypeSeverity(type: string): 'info' | 'success' | 'warn' | 'secondary
                 :key="p.port"
                 class="text-[11px] px-2 py-0.5 rounded font-mono bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60"
               >
-                {{ p.port }}<span v-if="p.target_port && p.target_port !== String(p.port)" class="text-slate-400">&rarr;{{ p.target_port }}</span>/{{ p.protocol }}
+                {{ p.port
+                }}<span
+                  v-if="p.target_port && p.target_port !== String(p.port)"
+                  class="text-slate-400"
+                  >&rarr;{{ p.target_port }}</span
+                >/{{ p.protocol }}
               </span>
               <span v-if="data.ports.length === 0" class="text-xs text-slate-400 italic">None</span>
             </div>
@@ -215,7 +232,10 @@ function getTypeSeverity(type: string): 'info' | 'success' | 'warn' | 'secondary
         <!-- Pod Selector Column -->
         <Column header="Pod Selector">
           <template #body="{ data }">
-            <div v-if="data.selector && Object.keys(data.selector).length > 0" class="flex flex-wrap gap-1 max-w-xs">
+            <div
+              v-if="data.selector && Object.keys(data.selector).length > 0"
+              class="flex flex-wrap gap-1 max-w-xs"
+            >
               <span
                 v-for="(val, key) in data.selector"
                 :key="key"
@@ -229,7 +249,12 @@ function getTypeSeverity(type: string): 'info' | 'success' | 'warn' | 'secondary
         </Column>
 
         <!-- Actions Column -->
-        <Column header="Actions" header-style="text-align: right" body-style="text-align: right" style="width: 250px">
+        <Column
+          header="Actions"
+          header-style="text-align: right"
+          body-style="text-align: right"
+          style="width: 250px"
+        >
           <template #body="{ data }">
             <div class="flex items-center justify-end gap-1.5">
               <Button
@@ -263,7 +288,9 @@ function getTypeSeverity(type: string): 'info' | 'success' | 'warn' | 'secondary
           <div class="py-16 text-center text-slate-400">
             <i class="pi pi-share-alt text-4xl mb-3 text-slate-300 dark:text-slate-700"></i>
             <h3 class="font-semibold text-slate-700 dark:text-slate-300">No Services Found</h3>
-            <p class="text-xs text-slate-500 mt-1">There are no Services in namespace {{ selectedNamespace }}.</p>
+            <p class="text-xs text-slate-500 mt-1">
+              There are no Services in namespace {{ selectedNamespace }}.
+            </p>
           </div>
         </template>
       </DataTable>
@@ -281,9 +308,13 @@ function getTypeSeverity(type: string): 'info' | 'success' | 'warn' | 'secondary
       }"
     >
       <!-- Custom Header -->
-      <div class="px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+      <div
+        class="px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between"
+      >
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-teal-500/10 text-teal-500 flex items-center justify-center font-bold text-base shrink-0">
+          <div
+            class="w-9 h-9 rounded-xl bg-teal-500/10 text-teal-500 flex items-center justify-center font-bold text-base shrink-0"
+          >
             <i class="pi pi-compass"></i>
           </div>
           <div>
@@ -305,18 +336,26 @@ function getTypeSeverity(type: string): 'info' | 'success' | 'warn' | 'secondary
       </div>
 
       <div v-if="selectedService" class="p-6 space-y-4 text-xs font-mono">
-        <div class="grid grid-cols-2 gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+        <div
+          class="grid grid-cols-2 gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+        >
           <div>
             <span class="text-slate-400 block text-[10px] uppercase">Type</span>
-            <span class="font-semibold text-slate-800 dark:text-slate-200">{{ selectedService.type }}</span>
+            <span class="font-semibold text-slate-800 dark:text-slate-200">{{
+              selectedService.type
+            }}</span>
           </div>
           <div>
             <span class="text-slate-400 block text-[10px] uppercase">Cluster IP</span>
-            <span class="font-semibold text-slate-800 dark:text-slate-200">{{ selectedService.cluster_ip || 'None' }}</span>
+            <span class="font-semibold text-slate-800 dark:text-slate-200">{{
+              selectedService.cluster_ip || 'None'
+            }}</span>
           </div>
           <div v-if="selectedService.external_ip" class="col-span-2">
             <span class="text-slate-400 block text-[10px] uppercase">External Name / IP</span>
-            <span class="font-semibold text-slate-800 dark:text-slate-200 break-all">{{ selectedService.external_ip }}</span>
+            <span class="font-semibold text-slate-800 dark:text-slate-200 break-all">{{
+              selectedService.external_ip
+            }}</span>
           </div>
         </div>
 
@@ -369,5 +408,4 @@ function getTypeSeverity(type: string): 'info' | 'success' | 'warn' | 'secondary
   </div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

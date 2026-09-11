@@ -36,7 +36,7 @@ watch(
       isSuspended.value = false
       errorMessage.value = null
     }
-  },
+  }
 )
 
 const scheduleDescription = computed(() => describeCron(schedule.value))
@@ -72,9 +72,9 @@ async function handleCreate() {
           name: name.value.trim().toLowerCase(),
           image: image.value.trim(),
           env: [],
-          env_from: [],
-        },
-      ],
+          env_from: []
+        }
+      ]
     })
     emit('created')
     emit('update:visible', false)
@@ -99,17 +99,22 @@ async function handleCreate() {
     @update:visible="(val) => emit('update:visible', val)"
   >
     <!-- Custom Header -->
-    <div class="px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+    <div
+      class="px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between"
+    >
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-base shrink-0">
+        <div
+          class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-base shrink-0"
+        >
           <i class="pi pi-clock"></i>
         </div>
         <div>
-          <h2 class="font-bold text-base text-slate-900 dark:text-slate-100">
-            Create New CronJob
-          </h2>
+          <h2 class="font-bold text-base text-slate-900 dark:text-slate-100">Create New CronJob</h2>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Schedule recurring automated batch tasks in namespace <span class="font-mono text-slate-700 dark:text-slate-300 font-semibold">{{ namespace }}</span>
+            Schedule recurring automated batch tasks in namespace
+            <span class="font-mono text-slate-700 dark:text-slate-300 font-semibold">{{
+              namespace
+            }}</span>
           </p>
         </div>
       </div>
@@ -132,7 +137,9 @@ async function handleCreate() {
       </div>
 
       <div>
-        <label class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 block mb-1">
+        <label
+          class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 block mb-1"
+        >
           CronJob Name
         </label>
         <InputText
@@ -145,10 +152,14 @@ async function handleCreate() {
       <!-- Schedule -->
       <div class="space-y-2">
         <div class="flex items-center justify-between">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 block">
+          <label
+            class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 block"
+          >
             Schedule
           </label>
-          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 font-mono">
+          <span
+            class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 font-mono"
+          >
             {{ scheduleDescription }}
           </span>
         </div>
@@ -170,16 +181,14 @@ async function handleCreate() {
           </button>
         </div>
 
-        <InputText
-          v-model="schedule"
-          placeholder="0 0 * * *"
-          class="font-mono text-sm w-full"
-        />
+        <InputText v-model="schedule" placeholder="0 0 * * *" class="font-mono text-sm w-full" />
       </div>
 
       <!-- Container Image -->
       <div>
-        <label class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 block mb-1">
+        <label
+          class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 block mb-1"
+        >
           Container Image
         </label>
         <InputText
@@ -197,11 +206,16 @@ async function handleCreate() {
           type="checkbox"
           class="rounded text-sky-600 focus:ring-sky-500 h-4 w-4"
         />
-        <label for="suspend-check" class="text-xs text-slate-700 dark:text-slate-300 select-none cursor-pointer">
+        <label
+          for="suspend-check"
+          class="text-xs text-slate-700 dark:text-slate-300 select-none cursor-pointer"
+        >
           Create as Suspended (paused initially)
         </label>
       </div>
-      <div class="flex items-center justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-800">
+      <div
+        class="flex items-center justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-800"
+      >
         <Button
           label="Cancel"
           severity="secondary"
@@ -222,5 +236,4 @@ async function handleCreate() {
   </Dialog>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

@@ -9,8 +9,8 @@ export const apiClient = axios.create({
   withCredentials: true, // Required for cookie-only authentication
   headers: {
     'Content-Type': 'application/json',
-    Accept: 'application/json',
-  },
+    Accept: 'application/json'
+  }
 })
 
 // Request tracking & Refresh token state
@@ -37,7 +37,7 @@ apiClient.interceptors.request.use(
     logger.info(`[HTTP ${config.method?.toUpperCase()}] ${config.url}`)
     return config
   },
-  (error: AxiosError) => Promise.reject(error),
+  (error: AxiosError) => Promise.reject(error)
 )
 
 // Response Interceptor with Cookie-Only Refresh Token Interception
@@ -78,17 +78,22 @@ apiClient.interceptors.response.use(
 
       try {
         logger.info('[Auth] Access token expired. Triggering token refresh...')
-        const storedRefreshToken = typeof window !== 'undefined' ? localStorage.getItem('kubeenv_refresh_token') || '' : ''
-        
+        const storedRefreshToken =
+          typeof window !== 'undefined' ? localStorage.getItem('kubeenv_refresh_token') || '' : ''
+
         // Multi-channel refresh: withCredentials sends cookies automatically, plus fallback body & headers
-        const res = await apiClient.post<{ data: { access_token?: string; refresh_token?: string } }>(
+        const res = await apiClient.post<{
+          data: { access_token?: string; refresh_token?: string }
+        }>(
           '/auth/refresh',
           { refresh_token: storedRefreshToken },
           {
-            headers: storedRefreshToken ? {
-              'X-Refresh-Token': storedRefreshToken,
-              'Authorization': `Bearer ${storedRefreshToken}`,
-            } : {},
+            headers: storedRefreshToken
+              ? {
+                  'X-Refresh-Token': storedRefreshToken,
+                  Authorization: `Bearer ${storedRefreshToken}`
+                }
+              : {}
           }
         )
 
@@ -118,5 +123,5 @@ apiClient.interceptors.response.use(
     }
 
     return Promise.reject(error)
-  },
+  }
 )

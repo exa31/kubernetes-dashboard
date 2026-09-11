@@ -34,7 +34,7 @@ const filteredPVCs = computed(() => {
     (p) =>
       p.name.toLowerCase().includes(q) ||
       p.volume.toLowerCase().includes(q) ||
-      p.storage_class.toLowerCase().includes(q),
+      p.storage_class.toLowerCase().includes(q)
   )
 })
 
@@ -45,7 +45,7 @@ const filteredPVs = computed(() => {
     (p) =>
       p.name.toLowerCase().includes(q) ||
       p.claim.toLowerCase().includes(q) ||
-      p.storage_class.toLowerCase().includes(q),
+      p.storage_class.toLowerCase().includes(q)
   )
 })
 
@@ -70,7 +70,9 @@ function refresh() {
 
       <!-- Tab Buttons & Refresh -->
       <div class="flex items-center gap-2">
-        <div class="flex items-center bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700/80">
+        <div
+          class="flex items-center bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700/80"
+        >
           <button
             type="button"
             class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer"
@@ -114,7 +116,9 @@ function refresh() {
         <InputIcon class="pi pi-search" />
         <InputText
           v-model="searchQuery"
-          :placeholder="activeTab === 'pvc' ? 'Search PVCs by name, volume...' : 'Search PVs by name, claim...'"
+          :placeholder="
+            activeTab === 'pvc' ? 'Search PVCs by name, volume...' : 'Search PVs by name, claim...'
+          "
           class="w-full !rounded-xl text-sm"
         />
       </IconField>
@@ -137,15 +141,21 @@ function refresh() {
         <template #empty>
           <div class="py-12 text-center text-slate-400">
             <i class="pi pi-database text-4xl mb-3 text-slate-300 dark:text-slate-600 block"></i>
-            <p class="font-medium text-slate-600 dark:text-slate-300">No PersistentVolumeClaims found</p>
-            <p class="text-xs text-slate-400 mt-1">There are no PVCs in namespace '{{ k8sStore.selectedNamespace }}'</p>
+            <p class="font-medium text-slate-600 dark:text-slate-300">
+              No PersistentVolumeClaims found
+            </p>
+            <p class="text-xs text-slate-400 mt-1">
+              There are no PVCs in namespace '{{ k8sStore.selectedNamespace }}'
+            </p>
           </div>
         </template>
 
         <Column field="name" header="Claim Name" sortable>
           <template #body="{ data }">
             <div class="flex items-center gap-2.5 py-1">
-              <div class="w-8 h-8 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0">
+              <div
+                class="w-8 h-8 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0"
+              >
                 <i class="pi pi-database text-sm"></i>
               </div>
               <div>
@@ -164,7 +174,9 @@ function refresh() {
           <template #body="{ data }">
             <Tag
               :value="data.status"
-              :severity="data.status === 'Bound' ? 'success' : data.status === 'Pending' ? 'warn' : 'danger'"
+              :severity="
+                data.status === 'Bound' ? 'success' : data.status === 'Pending' ? 'warn' : 'danger'
+              "
               class="font-mono text-xs font-semibold px-2 py-0.5"
             />
           </template>
@@ -206,7 +218,12 @@ function refresh() {
           </template>
         </Column>
 
-        <Column header="Action" header-style="text-align: right" body-style="text-align: right" style="width: 100px">
+        <Column
+          header="Action"
+          header-style="text-align: right"
+          body-style="text-align: right"
+          style="width: 100px"
+        >
           <template #body="{ data }">
             <Button
               label="YAML"
@@ -245,7 +262,9 @@ function refresh() {
         <Column field="name" header="Volume Name" sortable>
           <template #body="{ data }">
             <div class="flex items-center gap-2.5 py-1">
-              <div class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+              <div
+                class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0"
+              >
                 <i class="pi pi-hdd text-sm"></i>
               </div>
               <div class="font-bold text-slate-900 dark:text-slate-100 font-mono text-xs">
@@ -259,7 +278,9 @@ function refresh() {
           <template #body="{ data }">
             <Tag
               :value="data.status"
-              :severity="data.status === 'Bound' ? 'success' : data.status === 'Available' ? 'info' : 'warn'"
+              :severity="
+                data.status === 'Bound' ? 'success' : data.status === 'Available' ? 'info' : 'warn'
+              "
               class="font-mono text-xs font-semibold px-2 py-0.5"
             />
           </template>
@@ -301,7 +322,12 @@ function refresh() {
           </template>
         </Column>
 
-        <Column header="Action" header-style="text-align: right" body-style="text-align: right" style="width: 100px">
+        <Column
+          header="Action"
+          header-style="text-align: right"
+          body-style="text-align: right"
+          style="width: 100px"
+        >
           <template #body="{ data }">
             <Button
               label="YAML"

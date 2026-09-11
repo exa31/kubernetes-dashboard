@@ -2,7 +2,7 @@
  * Example Composable
  * Reusable Vue composition functions.
  */
-import { onMounted, onUnmounted,ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 export function useWindowSize() {
   const width = ref(window.innerWidth)

@@ -43,7 +43,7 @@ const tailOptions = [
   { label: '100 lines', value: 100 },
   { label: '250 lines', value: 250 },
   { label: '500 lines', value: 500 },
-  { label: '1000 lines', value: 1000 },
+  { label: '1000 lines', value: 1000 }
 ]
 
 const availableContainers = computed(() => {
@@ -87,9 +87,9 @@ async function loadLogs() {
       {
         container: selectedContainer.value,
         tail_lines: tailLines.value,
-        timestamps: showTimestamps.value,
+        timestamps: showTimestamps.value
       },
-      props.namespace,
+      props.namespace
     )
     logsText.value = res.logs || '(No log output returned)'
     await nextTick()
@@ -133,7 +133,7 @@ watch(
         timerId = null
       }
     }
-  },
+  }
 )
 
 watch(selectedPod, (newPod) => {
@@ -185,19 +185,29 @@ function closeDialog() {
     class="w-[95vw] max-w-6xl h-[85vh] rounded-2xl overflow-hidden shadow-2xl border border-slate-800"
     :pt="{
       root: { class: 'border-none p-0 overflow-hidden' },
-      content: { class: 'p-0 h-full flex flex-col overflow-hidden bg-slate-950 text-slate-100 rounded-xl' }
+      content: {
+        class: 'p-0 h-full flex flex-col overflow-hidden bg-slate-950 text-slate-100 rounded-xl'
+      }
     }"
   >
     <!-- Header Controls -->
-    <div class="p-4 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0">
+    <div
+      class="p-4 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0"
+    >
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-sm">
+        <div
+          class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-sm"
+        >
           <i class="pi pi-terminal"></i>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h2 class="font-bold text-sm text-slate-100 font-mono">{{ deploymentName || podName }}</h2>
-            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">{{ namespace }}</span>
+            <h2 class="font-bold text-sm text-slate-100 font-mono">
+              {{ deploymentName || podName }}
+            </h2>
+            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">{{
+              namespace
+            }}</span>
           </div>
           <p class="text-[11px] text-slate-400 mt-0.5">Live streaming logs from application pods</p>
         </div>
@@ -236,7 +246,9 @@ function closeDialog() {
     </div>
 
     <!-- Filter Bar -->
-    <div class="px-4 py-2.5 bg-slate-900/80 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
+    <div
+      class="px-4 py-2.5 bg-slate-900/80 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0"
+    >
       <div class="flex flex-wrap items-center gap-2.5">
         <!-- Pod Selector -->
         <div class="flex items-center gap-1.5">
@@ -255,7 +267,11 @@ function closeDialog() {
                 <span>{{ option.name }}</span>
                 <span
                   class="text-[10px] px-1.5 py-0.5 rounded font-bold"
-                  :class="option.phase === 'Running' ? 'bg-emerald-950 text-emerald-400' : 'bg-amber-950 text-amber-400'"
+                  :class="
+                    option.phase === 'Running'
+                      ? 'bg-emerald-950 text-emerald-400'
+                      : 'bg-amber-950 text-amber-400'
+                  "
                 >
                   {{ option.phase }}
                 </span>
@@ -290,7 +306,11 @@ function closeDialog() {
         <button
           type="button"
           class="px-2.5 py-1.5 rounded text-xs font-mono flex items-center gap-1.5 border transition-colors cursor-pointer"
-          :class="showTimestamps ? 'bg-sky-600/30 text-sky-300 border-sky-500/50' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'"
+          :class="
+            showTimestamps
+              ? 'bg-sky-600/30 text-sky-300 border-sky-500/50'
+              : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+          "
           @click="showTimestamps = !showTimestamps"
         >
           <i class="pi pi-clock text-[10px]"></i>
@@ -301,10 +321,17 @@ function closeDialog() {
         <button
           type="button"
           class="px-2.5 py-1.5 rounded text-xs font-mono flex items-center gap-1.5 border transition-colors cursor-pointer"
-          :class="autoRefresh ? 'bg-emerald-600/30 text-emerald-300 border-emerald-500/50' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'"
+          :class="
+            autoRefresh
+              ? 'bg-emerald-600/30 text-emerald-300 border-emerald-500/50'
+              : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+          "
           @click="autoRefresh = !autoRefresh"
         >
-          <span class="w-2 h-2 rounded-full" :class="autoRefresh ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'"></span>
+          <span
+            class="w-2 h-2 rounded-full"
+            :class="autoRefresh ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'"
+          ></span>
           <span>Live (3s)</span>
         </button>
 
@@ -342,7 +369,9 @@ function closeDialog() {
         :key="idx"
         class="flex hover:bg-slate-900/60 rounded px-1.5 py-0.5 group"
       >
-        <span class="select-none text-slate-600 group-hover:text-slate-400 w-12 text-right pr-3 shrink-0 font-mono">
+        <span
+          class="select-none text-slate-600 group-hover:text-slate-400 w-12 text-right pr-3 shrink-0 font-mono"
+        >
           {{ idx + 1 }}
         </span>
         <span class="break-all whitespace-pre-wrap flex-1">{{ line }}</span>
@@ -350,17 +379,20 @@ function closeDialog() {
     </div>
 
     <!-- Footer Stats -->
-    <div class="px-4 py-2 bg-slate-900 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400 font-mono shrink-0">
+    <div
+      class="px-4 py-2 bg-slate-900 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400 font-mono shrink-0"
+    >
       <div>
         <span>Showing {{ filteredLines.length }} lines</span>
         <span v-if="logSearch" class="ml-2 text-amber-400">(filtered by "{{ logSearch }}")</span>
       </div>
       <div>
-        <span>Pod: <strong class="text-slate-200">{{ selectedPod || 'none' }}</strong></span>
+        <span
+          >Pod: <strong class="text-slate-200">{{ selectedPod || 'none' }}</strong></span
+        >
       </div>
     </div>
   </Dialog>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

@@ -97,6 +97,6 @@ export function useK8sRealtime() {
     isConnected,
     lastEvent,
     connect,
-    disconnect,
+    disconnect
   }
 }

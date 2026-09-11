@@ -39,7 +39,7 @@ const handleConfirm = async () => {
         severity: 'info',
         summary: 'User Deleted',
         detail: `User ${props.user.name} permanently removed.`,
-        life: 3000,
+        life: 3000
       })
     } else {
       await userStore.deleteUser(props.user.id)
@@ -47,7 +47,7 @@ const handleConfirm = async () => {
         severity: 'warn',
         summary: 'User Deactivated',
         detail: `User ${props.user.name} deactivated.`,
-        life: 3000,
+        life: 3000
       })
     }
 
@@ -74,14 +74,22 @@ const handleConfirm = async () => {
     @update:visible="handleClose"
   >
     <div class="space-y-4 pt-2">
-      <div class="flex items-start gap-3 p-4 rounded-xl bg-rose-950/40 border border-rose-800/60 text-xs text-rose-200">
-        <div class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+      <div
+        class="flex items-start gap-3 p-4 rounded-xl bg-rose-950/40 border border-rose-800/60 text-xs text-rose-200"
+      >
+        <div
+          class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0"
+        >
           <i class="pi pi-exclamation-triangle text-base"></i>
         </div>
         <div>
           <h4 class="font-bold text-sm text-rose-300">Are you sure?</h4>
           <p class="mt-1 text-slate-300">
-            You are about to remove access for user <b class="text-white">{{ user?.name }}</b> (<span class="font-mono">{{ user?.email }}</span>).
+            You are about to remove access for user
+            <b class="text-white">{{ user?.name }}</b> (<span class="font-mono">{{
+              user?.email
+            }}</span
+            >).
           </p>
         </div>
       </div>
@@ -99,27 +107,47 @@ const handleConfirm = async () => {
       <div class="space-y-2 pt-1">
         <label
           class="flex items-center gap-3 p-3 rounded-xl border transition cursor-pointer"
-          :class="!isHardDelete
-            ? 'bg-slate-900 border-amber-500/50 text-white'
-            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'"
+          :class="
+            !isHardDelete
+              ? 'bg-slate-900 border-amber-500/50 text-white'
+              : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+          "
         >
-          <input v-model="isHardDelete" type="radio" :value="false" class="text-amber-500 focus:ring-0" />
+          <input
+            v-model="isHardDelete"
+            type="radio"
+            :value="false"
+            class="text-amber-500 focus:ring-0"
+          />
           <div class="text-xs">
-            <span class="font-bold text-amber-400">Deactivate Account (Soft Delete - Recommended)</span>
-            <p class="text-slate-400 mt-0.5">Revokes login credentials and tokens while preserving audit history.</p>
+            <span class="font-bold text-amber-400"
+              >Deactivate Account (Soft Delete - Recommended)</span
+            >
+            <p class="text-slate-400 mt-0.5">
+              Revokes login credentials and tokens while preserving audit history.
+            </p>
           </div>
         </label>
 
         <label
           class="flex items-center gap-3 p-3 rounded-xl border transition cursor-pointer"
-          :class="isHardDelete
-            ? 'bg-slate-900 border-rose-500/50 text-white'
-            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'"
+          :class="
+            isHardDelete
+              ? 'bg-slate-900 border-rose-500/50 text-white'
+              : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+          "
         >
-          <input v-model="isHardDelete" type="radio" :value="true" class="text-rose-500 focus:ring-0" />
+          <input
+            v-model="isHardDelete"
+            type="radio"
+            :value="true"
+            class="text-rose-500 focus:ring-0"
+          />
           <div class="text-xs">
             <span class="font-bold text-rose-400">Permanently Delete (Hard Delete)</span>
-            <p class="text-slate-400 mt-0.5">Completely purges user records from the database. Cannot be undone.</p>
+            <p class="text-slate-400 mt-0.5">
+              Completely purges user records from the database. Cannot be undone.
+            </p>
           </div>
         </label>
       </div>
@@ -139,9 +167,11 @@ const handleConfirm = async () => {
           :label="isHardDelete ? 'Permanently Delete' : 'Deactivate User'"
           :loading="userStore.isActionLoading"
           icon="pi pi-trash"
-          :class="isHardDelete
-            ? 'bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs border-none cursor-pointer'
-            : 'bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs border-none cursor-pointer'"
+          :class="
+            isHardDelete
+              ? 'bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs border-none cursor-pointer'
+              : 'bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs border-none cursor-pointer'
+          "
           @click="handleConfirm"
         />
       </div>

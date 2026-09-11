@@ -12,8 +12,8 @@ const props = withDefaults(
     size: 'md',
     showText: true,
     collapsed: false,
-    badge: 'v2.0',
-  },
+    badge: 'v2.0'
+  }
 )
 
 const iconSizeClass = computed(() => {
@@ -111,7 +111,14 @@ const textTitleClass = computed(() => {
         <circle cx="13" cy="17.5" r="2.2" fill="#818cf8" stroke="#ffffff" stroke-width="1" />
 
         <!-- Center Active Nexus Quantum Core -->
-        <circle cx="24" cy="24" r="4.2" fill="url(#kn-core-grad)" stroke="#ffffff" stroke-width="1.5" />
+        <circle
+          cx="24"
+          cy="24"
+          r="4.2"
+          fill="url(#kn-core-grad)"
+          stroke="#ffffff"
+          stroke-width="1.5"
+        />
         <circle cx="24" cy="24" r="1.6" fill="#ffffff" />
       </svg>
     </div>
@@ -119,7 +126,11 @@ const textTitleClass = computed(() => {
     <!-- Brand Text -->
     <div v-if="showText && !collapsed" class="flex items-center gap-2 min-w-0">
       <div class="tracking-tight leading-none" :class="textTitleClass">
-        <span class="text-slate-900 dark:text-white">Kube</span><span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-cyan-300 to-emerald-400">Nexus</span>
+        <span class="text-slate-900 dark:text-white">Kube</span
+        ><span
+          class="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-cyan-300 to-emerald-400"
+          >Nexus</span
+        >
       </div>
 
       <!-- Version / Edition Badge -->

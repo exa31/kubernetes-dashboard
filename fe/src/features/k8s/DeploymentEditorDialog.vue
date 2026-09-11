@@ -43,7 +43,7 @@ async function loadDeployment() {
     logger.error('Failed to load deployment details', err)
     statusMessage.value = {
       text: err instanceof Error ? err.message : 'Failed to load deployment',
-      severity: 'error',
+      severity: 'error'
     }
   } finally {
     isLoading.value = false
@@ -56,7 +56,7 @@ watch(
     if (open) {
       loadDeployment()
     }
-  },
+  }
 )
 
 function addEnvVar(containerIndex: number) {
@@ -65,7 +65,7 @@ function addEnvVar(containerIndex: number) {
   }
   containers.value[containerIndex].env.push({
     name: 'NEW_KEY',
-    value: 'value',
+    value: 'value'
   })
 }
 
@@ -81,13 +81,13 @@ async function saveChanges() {
       props.deploymentName,
       {
         replicas: replicas.value,
-        containers: containers.value,
+        containers: containers.value
       },
-      props.namespace,
+      props.namespace
     )
     statusMessage.value = {
       text: `Deployment '${props.deploymentName}' updated and rollout restart triggered!`,
-      severity: 'success',
+      severity: 'success'
     }
     emit('saved')
   } catch (err: unknown) {
@@ -122,16 +122,23 @@ function closeDialog() {
     }"
   >
     <!-- Header -->
-    <div class="p-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+    <div
+      class="p-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0"
+    >
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-500 flex items-center justify-center font-bold text-sm">
+        <div
+          class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-500 flex items-center justify-center font-bold text-sm"
+        >
           <i class="pi pi-server"></i>
         </div>
         <div>
           <h2 class="font-bold text-base text-slate-900 dark:text-slate-100 font-mono">
             Edit Deployment: {{ deploymentName }}
           </h2>
-          <p class="text-xs text-slate-500">Namespace: <span class="font-mono text-slate-700 dark:text-slate-300">{{ namespace }}</span></p>
+          <p class="text-xs text-slate-500">
+            Namespace:
+            <span class="font-mono text-slate-700 dark:text-slate-300">{{ namespace }}</span>
+          </p>
         </div>
       </div>
 
@@ -161,8 +168,12 @@ function closeDialog() {
 
       <div v-else class="space-y-6">
         <!-- Replicas section -->
-        <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+        <div
+          class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm"
+        >
+          <label
+            class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
+          >
             Pod Replicas (Scaling)
           </label>
           <div class="flex items-center gap-3 mt-2">
@@ -174,7 +185,9 @@ function closeDialog() {
               :max="100"
               class="w-48 font-mono text-sm"
             />
-            <span class="text-xs text-slate-500">Currently {{ deployment?.ready_replicas ?? 0 }} ready pods</span>
+            <span class="text-xs text-slate-500"
+              >Currently {{ deployment?.ready_replicas ?? 0 }} ready pods</span
+            >
           </div>
         </div>
 
@@ -184,16 +197,22 @@ function closeDialog() {
           :key="c.name"
           class="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4"
         >
-          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div
+            class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3"
+          >
             <div class="flex items-center gap-2">
               <i class="pi pi-box text-sky-500 text-sm"></i>
-              <span class="font-bold text-sm font-mono text-slate-900 dark:text-slate-100">{{ c.name }}</span>
+              <span class="font-bold text-sm font-mono text-slate-900 dark:text-slate-100">{{
+                c.name
+              }}</span>
             </div>
           </div>
 
           <!-- Container Image -->
           <div>
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+            <label
+              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
+            >
               Container Image
             </label>
             <InputText
@@ -206,7 +225,9 @@ function closeDialog() {
           <!-- Container Environment Variables -->
           <div>
             <div class="flex items-center justify-between mb-2">
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              <label
+                class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider"
+              >
                 Direct Container Environment Variables
               </label>
               <Button
@@ -220,11 +241,7 @@ function closeDialog() {
             </div>
 
             <div class="space-y-2">
-              <div
-                v-for="(env, eIdx) in c.env"
-                :key="eIdx"
-                class="flex items-center gap-2"
-              >
+              <div v-for="(env, eIdx) in c.env" :key="eIdx" class="flex items-center gap-2">
                 <InputText
                   v-model="env.name"
                   placeholder="KEY"
@@ -254,7 +271,10 @@ function closeDialog() {
           </div>
 
           <!-- Mounted EnvFrom Sources Info -->
-          <div v-if="c.env_from && c.env_from.length > 0" class="pt-2 border-t border-slate-100 dark:border-slate-800/60">
+          <div
+            v-if="c.env_from && c.env_from.length > 0"
+            class="pt-2 border-t border-slate-100 dark:border-slate-800/60"
+          >
             <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">
               Mounted Config / Secret Sources:
             </span>
@@ -264,7 +284,12 @@ function closeDialog() {
                 :key="ef.name"
                 class="text-xs px-2.5 py-1 rounded-md font-mono flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
               >
-                <i :class="ef.type === 'secret' ? 'pi pi-lock text-amber-500' : 'pi pi-file text-sky-500'" class="text-[10px]"></i>
+                <i
+                  :class="
+                    ef.type === 'secret' ? 'pi pi-lock text-amber-500' : 'pi pi-file text-sky-500'
+                  "
+                  class="text-[10px]"
+                ></i>
                 <span>{{ ef.name }}</span>
               </span>
             </div>
@@ -274,7 +299,9 @@ function closeDialog() {
     </div>
 
     <!-- Footer -->
-    <div class="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2 shrink-0">
+    <div
+      class="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2 shrink-0"
+    >
       <Button label="Cancel" severity="secondary" text size="small" @click="closeDialog" />
       <Button
         label="Save & Rollout Restart"
@@ -288,5 +315,4 @@ function closeDialog() {
   </Dialog>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

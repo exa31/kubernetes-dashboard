@@ -9,7 +9,8 @@ import { useK8sStore } from '@/stores'
 
 const router = useRouter()
 const k8sStore = useK8sStore()
-const { clusterInfo, selectedNamespace, secrets, configmaps, deployments, isLoading } = storeToRefs(k8sStore)
+const { clusterInfo, selectedNamespace, secrets, configmaps, deployments, isLoading } =
+  storeToRefs(k8sStore)
 
 onMounted(() => {
   k8sStore.fetchAllResources()
@@ -21,7 +22,9 @@ onMounted(() => {
     <!-- Header -->
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
+        <h1
+          class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5"
+        >
           <i class="pi pi-compass text-sky-500"></i>
           <span>Cluster Overview</span>
         </h1>
@@ -43,7 +46,9 @@ onMounted(() => {
     </div>
 
     <!-- Cluster Connection Status Hero Banner -->
-    <div class="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 border border-sky-900/40 text-white shadow-xl relative overflow-hidden">
+    <div
+      class="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 border border-sky-900/40 text-white shadow-xl relative overflow-hidden"
+    >
       <div class="relative z-10 flex flex-wrap items-center justify-between gap-6">
         <div>
           <div class="flex items-center gap-2 mb-2">
@@ -56,11 +61,24 @@ onMounted(() => {
             {{ clusterInfo?.endpoint || 'https://103.150.226.122:6443' }}
           </h2>
           <div class="flex flex-wrap items-center gap-4 text-xs text-slate-300 mt-2 font-mono">
-            <span>Version: <strong class="text-sky-300">{{ clusterInfo?.server_version || 'v1.32.2' }}</strong></span>
+            <span
+              >Version:
+              <strong class="text-sky-300">{{
+                clusterInfo?.server_version || 'v1.32.2'
+              }}</strong></span
+            >
             <span>•</span>
-            <span>Context: <strong class="text-sky-300">{{ clusterInfo?.current_context || 'default' }}</strong></span>
+            <span
+              >Context:
+              <strong class="text-sky-300">{{
+                clusterInfo?.current_context || 'default'
+              }}</strong></span
+            >
             <span>•</span>
-            <span>Active Namespace: <strong class="text-amber-300">{{ selectedNamespace }}</strong></span>
+            <span
+              >Active Namespace:
+              <strong class="text-amber-300">{{ selectedNamespace }}</strong></span
+            >
           </div>
         </div>
 
@@ -76,11 +94,18 @@ onMounted(() => {
     <!-- Stats Grid for Active Namespace -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
       <!-- Secrets Card -->
-      <Card class="shadow-sm border border-slate-200 dark:border-slate-800 hover:border-amber-400/50 transition-all cursor-pointer group" @click="router.push('/secrets')">
+      <Card
+        class="shadow-sm border border-slate-200 dark:border-slate-800 hover:border-amber-400/50 transition-all cursor-pointer group"
+        @click="router.push('/secrets')"
+      >
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <div class="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">Secrets (Env)</div>
+              <div
+                class="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400"
+              >
+                Secrets (Env)
+              </div>
               <div class="text-3xl font-bold text-slate-900 dark:text-slate-100 mt-1 font-mono">
                 {{ secrets.length }}
               </div>
@@ -88,7 +113,9 @@ onMounted(() => {
                 Decoded variables in {{ selectedNamespace }}
               </div>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+            <div
+              class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-xl group-hover:scale-110 transition-transform"
+            >
               <i class="pi pi-lock"></i>
             </div>
           </div>
@@ -96,11 +123,18 @@ onMounted(() => {
       </Card>
 
       <!-- ConfigMaps Card -->
-      <Card class="shadow-sm border border-slate-200 dark:border-slate-800 hover:border-sky-400/50 transition-all cursor-pointer group" @click="router.push('/configmaps')">
+      <Card
+        class="shadow-sm border border-slate-200 dark:border-slate-800 hover:border-sky-400/50 transition-all cursor-pointer group"
+        @click="router.push('/configmaps')"
+      >
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <div class="text-xs font-semibold uppercase tracking-wider text-sky-600 dark:text-sky-400">ConfigMaps</div>
+              <div
+                class="text-xs font-semibold uppercase tracking-wider text-sky-600 dark:text-sky-400"
+              >
+                ConfigMaps
+              </div>
               <div class="text-3xl font-bold text-slate-900 dark:text-slate-100 mt-1 font-mono">
                 {{ configmaps.length }}
               </div>
@@ -108,7 +142,9 @@ onMounted(() => {
                 Plaintext configurations in {{ selectedNamespace }}
               </div>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+            <div
+              class="w-12 h-12 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center text-xl group-hover:scale-110 transition-transform"
+            >
               <i class="pi pi-file"></i>
             </div>
           </div>
@@ -116,19 +152,26 @@ onMounted(() => {
       </Card>
 
       <!-- Deployments Card -->
-      <Card class="shadow-sm border border-slate-200 dark:border-slate-800 hover:border-blue-400/50 transition-all cursor-pointer group" @click="router.push('/workloads')">
+      <Card
+        class="shadow-sm border border-slate-200 dark:border-slate-800 hover:border-blue-400/50 transition-all cursor-pointer group"
+        @click="router.push('/workloads')"
+      >
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <div class="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">Deployments</div>
+              <div
+                class="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400"
+              >
+                Deployments
+              </div>
               <div class="text-3xl font-bold text-slate-900 dark:text-slate-100 mt-1 font-mono">
                 {{ deployments.length }}
               </div>
-              <div class="text-xs text-slate-500 mt-1">
-                Workloads with 1-click Rollout Restart
-              </div>
+              <div class="text-xs text-slate-500 mt-1">Workloads with 1-click Rollout Restart</div>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+            <div
+              class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center text-xl group-hover:scale-110 transition-transform"
+            >
               <i class="pi pi-server"></i>
             </div>
           </div>
@@ -137,14 +180,20 @@ onMounted(() => {
     </div>
 
     <!-- Quick Environment Management Panel -->
-    <div class="bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+    <div
+      class="bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm"
+    >
       <div class="flex items-center justify-between mb-4">
         <div>
-          <h3 class="font-bold text-base text-slate-900 dark:text-slate-100 flex items-center gap-2">
+          <h3
+            class="font-bold text-base text-slate-900 dark:text-slate-100 flex items-center gap-2"
+          >
             <i class="pi pi-bolt text-sky-500"></i>
             <span>Quick Secrets Access in {{ selectedNamespace }}</span>
           </h3>
-          <p class="text-xs text-slate-500 mt-0.5">Click any secret to open the modern Rancher-style Env Editor</p>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Click any secret to open the modern Rancher-style Env Editor
+          </p>
         </div>
         <Button
           label="View All Secrets"
@@ -166,7 +215,9 @@ onMounted(() => {
           <div class="min-w-0 flex items-center gap-2.5">
             <i class="pi pi-lock text-amber-500 text-sm"></i>
             <div class="min-w-0">
-              <div class="font-semibold text-xs font-mono truncate text-slate-900 dark:text-slate-100">
+              <div
+                class="font-semibold text-xs font-mono truncate text-slate-900 dark:text-slate-100"
+              >
                 {{ s.name }}
               </div>
               <div class="text-[11px] text-slate-400 font-mono mt-0.5">
@@ -188,5 +239,4 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

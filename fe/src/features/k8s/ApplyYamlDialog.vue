@@ -21,7 +21,7 @@ const k8sStore = useK8sStore()
 
 const activeNamespace = computed(() => k8sStore.selectedNamespace || 'default')
 const availableNamespaces = computed(() =>
-  k8sStore.namespaces.map((ns) => ({ label: ns.name, value: ns.name })),
+  k8sStore.namespaces.map((ns) => ({ label: ns.name, value: ns.name }))
 )
 
 const targetNamespace = ref(activeNamespace.value)
@@ -38,7 +38,7 @@ watch(
   () => k8sStore.selectedNamespace,
   (newNs) => {
     if (newNs) targetNamespace.value = newNs
-  },
+  }
 )
 
 // Watch visible to reset results
@@ -53,7 +53,7 @@ watch(
         loadTemplate('deployment_service')
       }
     }
-  },
+  }
 )
 
 const TEMPLATES: Record<string, { label: string; icon: string; yaml: (ns: string) => string }> = {
@@ -69,7 +69,7 @@ metadata:
   namespace: default
 data:
   APP_ENV: "production"
-`,
+`
   },
   deployment_service: {
     label: 'Deployment & Service (Full Web Stack)',
@@ -119,7 +119,7 @@ spec:
       protocol: TCP
   selector:
     app: demo-web-app
-`,
+`
   },
   cronjob: {
     label: 'CronJob (Scheduled Task)',
@@ -145,7 +145,7 @@ spec:
                 - -c
                 - "echo 'Running scheduled batch task...'; date; sleep 3; echo 'Finished!'"
           restartPolicy: OnFailure
-`,
+`
   },
   configmap: {
     label: 'ConfigMap (App Configuration)',
@@ -160,7 +160,7 @@ data:
   LOG_LEVEL: "info"
   PORT: "8080"
   ENABLE_METRICS: "true"
-`,
+`
   },
   secret: {
     label: 'Secret (Opaque Credentials)',
@@ -174,7 +174,7 @@ type: Opaque
 stringData:
   API_KEY: "super-secret-production-token-12345"
   DB_PASSWORD: "database-secure-password-abc"
-`,
+`
   },
   ingress: {
     label: 'Ingress (HTTP Route & Domain)',
@@ -198,7 +198,7 @@ spec:
                 name: demo-web-service
                 port:
                   number: 80
-`,
+`
   },
   pvc: {
     label: 'PersistentVolumeClaim (Storage)',
@@ -214,7 +214,7 @@ spec:
   resources:
     requests:
       storage: 2Gi
-`,
+`
   },
   pod: {
     label: 'Pod (Single Container)',
@@ -229,14 +229,14 @@ spec:
     - name: tools
       image: curlimages/curl:latest
       command: ["sleep", "3600"]
-`,
-  },
+`
+  }
 }
 
 const templateOptions = Object.entries(TEMPLATES).map(([key, item]) => ({
   key,
   label: item.label,
-  icon: item.icon,
+  icon: item.icon
 }))
 
 function loadTemplate(key: string) {
@@ -268,8 +268,7 @@ function handleKeydown(e: KeyboardEvent) {
     const target = e.target as HTMLTextAreaElement
     const start = target.selectionStart
     const end = target.selectionEnd
-    yamlContent.value =
-      `${yamlContent.value.substring(0, start)  }  ${  yamlContent.value.substring(end)}`
+    yamlContent.value = `${yamlContent.value.substring(0, start)}  ${yamlContent.value.substring(end)}`
     setTimeout(() => {
       target.selectionStart = target.selectionEnd = start + 2
     }, 0)
@@ -353,20 +352,27 @@ function closeDialog() {
     @update:visible="closeDialog"
   >
     <!-- Custom Header -->
-    <div class="px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+    <div
+      class="px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0"
+    >
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center font-bold text-lg shrink-0">
+        <div
+          class="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center font-bold text-lg shrink-0"
+        >
           <i class="pi pi-code"></i>
         </div>
         <div>
           <h2 class="font-bold text-lg text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <span>Apply Kubernetes YAML Manifest</span>
-            <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 font-semibold border border-sky-200 dark:border-sky-800">
+            <span
+              class="px-2 py-0.5 rounded text-[11px] font-mono bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 font-semibold border border-sky-200 dark:border-sky-800"
+            >
               kubectl apply -f
             </span>
           </h2>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Directly create, update, or validate multi-document Kubernetes resources in your cluster.
+            Directly create, update, or validate multi-document Kubernetes resources in your
+            cluster.
           </p>
         </div>
       </div>
@@ -381,11 +387,15 @@ function closeDialog() {
     </div>
 
     <!-- Controls Toolbar -->
-    <div class="px-6 py-3 bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0">
+    <div
+      class="px-6 py-3 bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0"
+    >
       <div class="flex flex-wrap items-center gap-3">
         <!-- Preset Templates Selector -->
         <div class="flex items-center gap-2">
-          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+          <label
+            class="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider"
+          >
             Template:
           </label>
           <Select
@@ -399,7 +409,10 @@ function closeDialog() {
           >
             <template #value="slotProps">
               <div v-if="slotProps.value" class="flex items-center gap-2 text-xs">
-                <i :class="TEMPLATES[slotProps.value]?.icon || 'pi pi-file'" class="text-sky-500"></i>
+                <i
+                  :class="TEMPLATES[slotProps.value]?.icon || 'pi pi-file'"
+                  class="text-sky-500"
+                ></i>
                 <span class="truncate">{{ TEMPLATES[slotProps.value]?.label }}</span>
               </div>
             </template>
@@ -414,7 +427,9 @@ function closeDialog() {
 
         <!-- Target Namespace -->
         <div class="flex items-center gap-2">
-          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+          <label
+            class="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider"
+          >
             Target Namespace:
           </label>
           <Select
@@ -491,7 +506,9 @@ function closeDialog() {
       <div
         v-if="executionResult || executionError"
         class="border-t border-slate-800 max-h-48 overflow-y-auto p-4 shrink-0 transition-all"
-        :class="executionError || executionResult?.error_count ? 'bg-rose-950/40' : 'bg-emerald-950/40'"
+        :class="
+          executionError || executionResult?.error_count ? 'bg-rose-950/40' : 'bg-emerald-950/40'
+        "
       >
         <!-- Error Banner -->
         <div v-if="executionError" class="flex items-start gap-2.5 text-rose-300 text-xs">
@@ -507,11 +524,19 @@ function closeDialog() {
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <i
-                :class="executionResult.error_count > 0 ? 'pi pi-exclamation-circle text-amber-400' : 'pi pi-check-circle text-emerald-400'"
+                :class="
+                  executionResult.error_count > 0
+                    ? 'pi pi-exclamation-circle text-amber-400'
+                    : 'pi pi-check-circle text-emerald-400'
+                "
                 class="text-base"
               ></i>
               <span class="text-xs font-bold text-slate-200">
-                {{ executionResult.dry_run ? 'Dry-Run Pre-Flight Validation:' : 'Apply Execution Result:' }}
+                {{
+                  executionResult.dry_run
+                    ? 'Dry-Run Pre-Flight Validation:'
+                    : 'Apply Execution Result:'
+                }}
               </span>
               <Tag
                 :value="`${executionResult.success_count} / ${executionResult.total} Succeeded`"
@@ -538,7 +563,9 @@ function closeDialog() {
             >
               <div class="truncate mr-2">
                 <span class="font-bold">{{ item.kind }}/{{ item.name }}</span>
-                <span v-if="item.namespace" class="text-slate-400 ml-1 text-[11px]">({{ item.namespace }})</span>
+                <span v-if="item.namespace" class="text-slate-400 ml-1 text-[11px]"
+                  >({{ item.namespace }})</span
+                >
               </div>
               <div class="flex items-center gap-1.5 shrink-0">
                 <Tag
@@ -554,7 +581,9 @@ function closeDialog() {
     </div>
 
     <!-- Footer Controls -->
-    <div class="px-6 py-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0">
+    <div
+      class="px-6 py-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0"
+    >
       <div class="text-xs text-slate-400 font-mono flex items-center gap-2">
         <i class="pi pi-info-circle text-sky-500"></i>
         <span>Supports multiple documents separated by <code class="text-sky-400">---</code></span>

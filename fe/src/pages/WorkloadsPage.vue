@@ -8,5 +8,4 @@ import { DeploymentList } from '@/features/k8s'
   </div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

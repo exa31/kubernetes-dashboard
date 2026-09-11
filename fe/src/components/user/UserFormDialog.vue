@@ -43,7 +43,7 @@ const form = reactive<FormState>({
   role: 'viewer',
   allowed_namespaces: '*',
   phone: '',
-  is_active: true,
+  is_active: true
 })
 
 const errorMessage = ref('')
@@ -53,20 +53,20 @@ const roleOptions = [
     label: 'Cluster Admin (Full Access)',
     value: 'admin' as UserRole,
     desc: 'Full cluster control, RBAC, credentials & user management across all namespaces',
-    badgeClass: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
+    badgeClass: 'bg-purple-500/10 text-purple-400 border-purple-500/30'
   },
   {
     label: 'DevOps Engineer (Read/Write)',
     value: 'devops' as UserRole,
     desc: 'Deploy, scale, restart workloads, inspect logs & web terminal in allowed namespaces',
-    badgeClass: 'bg-sky-500/10 text-sky-400 border-sky-500/30',
+    badgeClass: 'bg-sky-500/10 text-sky-400 border-sky-500/30'
   },
   {
     label: 'Viewer (Read-Only)',
     value: 'viewer' as UserRole,
     desc: 'Observe cluster telemetry, pods status, events & resource metrics in allowed namespaces',
-    badgeClass: 'bg-slate-500/10 text-slate-400 border-slate-500/30',
-  },
+    badgeClass: 'bg-slate-500/10 text-slate-400 border-slate-500/30'
+  }
 ]
 
 watch(
@@ -93,7 +93,7 @@ watch(
         form.is_active = true
       }
     }
-  },
+  }
 )
 
 const toggleNamespace = (nsName: string) => {
@@ -102,7 +102,10 @@ const toggleNamespace = (nsName: string) => {
     form.allowed_namespaces = nsName
     return
   }
-  const parts = current.split(',').map((s) => s.trim()).filter(Boolean)
+  const parts = current
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
   const idx = parts.findIndex((s) => s.toLowerCase() === nsName.toLowerCase())
   if (idx >= 0) {
     parts.splice(idx, 1)
@@ -141,14 +144,14 @@ const handleSubmit = async () => {
         role: form.role,
         allowed_namespaces: form.allowed_namespaces.trim() || '*',
         phone: form.phone.trim() || undefined,
-        is_active: form.is_active,
+        is_active: form.is_active
       }
       await userStore.updateUser(props.user.id, payload)
       toast.add({
         severity: 'success',
         summary: 'User Updated',
         detail: `User ${form.name} updated successfully`,
-        life: 3000,
+        life: 3000
       })
     } else {
       const payload: CreateUserPayload = {
@@ -157,14 +160,14 @@ const handleSubmit = async () => {
         password: form.password,
         role: form.role,
         allowed_namespaces: form.allowed_namespaces.trim() || '*',
-        phone: form.phone.trim() || undefined,
+        phone: form.phone.trim() || undefined
       }
       await userStore.createUser(payload)
       toast.add({
         severity: 'success',
         summary: 'User Created',
         detail: `User ${form.name} created successfully`,
-        life: 3000,
+        life: 3000
       })
     }
 
@@ -190,7 +193,9 @@ const handleSubmit = async () => {
       root: { class: 'border-slate-800 bg-slate-900' },
       header: { class: 'border-b border-slate-800 bg-slate-900/90 text-slate-100 px-6 py-4' },
       content: { class: 'bg-slate-900 text-slate-100 px-6 py-5 space-y-4' },
-      footer: { class: 'border-t border-slate-800 bg-slate-900/90 px-6 py-4 flex justify-end gap-2' },
+      footer: {
+        class: 'border-t border-slate-800 bg-slate-900/90 px-6 py-4 flex justify-end gap-2'
+      }
     }"
     @update:visible="(val) => emit('update:visible', val)"
   >
@@ -261,7 +266,9 @@ const handleSubmit = async () => {
           <template #option="slotProps">
             <div class="py-1">
               <div class="flex items-center gap-2">
-                <span class="font-semibold text-sm text-slate-100">{{ slotProps.option.label }}</span>
+                <span class="font-semibold text-sm text-slate-100">{{
+                  slotProps.option.label
+                }}</span>
                 <span
                   class="px-2 py-0.5 rounded text-[10px] font-mono border"
                   :class="slotProps.option.badgeClass"
@@ -276,9 +283,14 @@ const handleSubmit = async () => {
       </div>
 
       <!-- Allowed Namespaces (DevOps & Viewer) -->
-      <div v-if="form.role === 'devops' || form.role === 'viewer'" class="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2.5">
+      <div
+        v-if="form.role === 'devops' || form.role === 'viewer'"
+        class="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2.5"
+      >
         <div class="flex items-center justify-between">
-          <label class="block text-xs font-semibold text-sky-300 uppercase tracking-wider flex items-center gap-1.5">
+          <label
+            class="block text-xs font-semibold text-sky-300 uppercase tracking-wider flex items-center gap-1.5"
+          >
             <i class="pi pi-box text-xs"></i>
             <span>Allowed Namespaces</span>
           </label>
@@ -294,7 +306,11 @@ const handleSubmit = async () => {
           <button
             type="button"
             class="px-2 py-0.5 rounded text-[10px] font-mono border transition cursor-pointer"
-            :class="form.allowed_namespaces === '*' ? 'bg-sky-500/20 text-sky-300 border-sky-500/40 font-semibold' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'"
+            :class="
+              form.allowed_namespaces === '*'
+                ? 'bg-sky-500/20 text-sky-300 border-sky-500/40 font-semibold'
+                : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+            "
             @click="form.allowed_namespaces = '*'"
           >
             * (All Namespaces)
@@ -304,14 +320,22 @@ const handleSubmit = async () => {
             :key="ns.name"
             type="button"
             class="px-2 py-0.5 rounded text-[10px] font-mono border transition cursor-pointer"
-            :class="form.allowed_namespaces.includes(ns.name) ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-semibold' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'"
+            :class="
+              form.allowed_namespaces.includes(ns.name)
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-semibold'
+                : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+            "
             @click="toggleNamespace(ns.name)"
           >
             + {{ ns.name }}
           </button>
         </div>
         <p class="text-[11px] text-slate-400">
-          {{ form.role === 'devops' ? 'DevOps can only deploy, scale, restart, and mutate resources in these namespaces.' : 'Viewer can only observe and inspect telemetry in these namespaces.' }}
+          {{
+            form.role === 'devops'
+              ? 'DevOps can only deploy, scale, restart, and mutate resources in these namespaces.'
+              : 'Viewer can only observe and inspect telemetry in these namespaces.'
+          }}
         </p>
       </div>
 
@@ -328,17 +352,24 @@ const handleSubmit = async () => {
       </div>
 
       <!-- Status Toggle (Edit only) -->
-      <div v-if="isEditMode" class="pt-2 border-t border-slate-800 flex items-center justify-between">
+      <div
+        v-if="isEditMode"
+        class="pt-2 border-t border-slate-800 flex items-center justify-between"
+      >
         <div>
           <span class="text-sm font-semibold text-slate-200">Account Status</span>
-          <p class="text-xs text-slate-400">Deactivated users cannot authenticate or access cluster API.</p>
+          <p class="text-xs text-slate-400">
+            Deactivated users cannot authenticate or access cluster API.
+          </p>
         </div>
         <button
           type="button"
           class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer"
-          :class="form.is_active
-            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
-            : 'bg-rose-500/10 text-rose-400 border-rose-500/30 hover:bg-rose-500/20'"
+          :class="
+            form.is_active
+              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+              : 'bg-rose-500/10 text-rose-400 border-rose-500/30 hover:bg-rose-500/20'
+          "
           @click="form.is_active = !form.is_active"
         >
           <i class="pi" :class="form.is_active ? 'pi-check-circle' : 'pi-ban'"></i>

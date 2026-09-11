@@ -109,6 +109,31 @@ type RolloutRestartResponse struct {
 	RestartAt  string `json:"restart_at"`
 }
 
+// DeploymentRevisionDTO represents a revision in the rollout history of a deployment.
+type DeploymentRevisionDTO struct {
+	Revision    int64     `json:"revision"`
+	ReplicaSet  string    `json:"replicaset"`
+	Images      []string  `json:"images"`
+	ChangeCause string    `json:"change_cause"`
+	Replicas    int32     `json:"replicas"`
+	CreatedAt   time.Time `json:"created_at"`
+	Age         string    `json:"age"`
+	IsCurrent   bool      `json:"is_current"`
+}
+
+// RollbackDeploymentRequest holds payload for rolling back a deployment to a specific or previous revision.
+type RollbackDeploymentRequest struct {
+	ToRevision int64 `json:"to_revision"` // 0 or omitted means rollback to previous revision
+}
+
+// RollbackDeploymentResponse holds the result of rolling back a deployment.
+type RollbackDeploymentResponse struct {
+	Message    string `json:"message"`
+	Deployment string `json:"deployment"`
+	Namespace  string `json:"namespace"`
+	ToRevision int64  `json:"to_revision"`
+}
+
 // ContainerEnvVarDTO represents an environment variable in a container.
 type ContainerEnvVarDTO struct {
 	Name      string `json:"name"`

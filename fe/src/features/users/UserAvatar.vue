@@ -14,10 +14,10 @@ defineProps<{
 
 <template>
   <div class="flex items-center gap-3">
-    <Avatar 
-      :image="user.avatarUrl" 
-      :label="!user.avatarUrl ? user.name.charAt(0) : undefined" 
-      shape="circle" 
+    <Avatar
+      :image="user.avatarUrl"
+      :label="!user.avatarUrl ? user.name.charAt(0) : undefined"
+      shape="circle"
       class="bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300"
     />
     <div>

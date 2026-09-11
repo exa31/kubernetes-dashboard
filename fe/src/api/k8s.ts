@@ -10,6 +10,7 @@ import type {
   DaemonSetItem,
   DeploymentDetail,
   DeploymentItem,
+  DeploymentRevision,
   EventItem,
   IngressItem,
   JobItem,
@@ -23,6 +24,7 @@ import type {
   ResourceQuotaItem,
   ResourceYAMLResponse,
   RolloutRestartResponse,
+  RollbackDeploymentResponse,
   SaveConfigMapPayload,
   SaveSecretPayload,
   SecretDetail,
@@ -110,6 +112,25 @@ export const k8sApi = {
   restartDeployment: async (namespace: string, name: string): Promise<RolloutRestartResponse> => {
     const res = await apiClient.post<{ data: RolloutRestartResponse }>(
       `/k8s/deployments/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/restart`
+    )
+    return res.data.data
+  },
+
+  getDeploymentHistory: async (namespace: string, name: string): Promise<DeploymentRevision[]> => {
+    const res = await apiClient.get<{ data: DeploymentRevision[] }>(
+      `/k8s/deployments/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/history`
+    )
+    return res.data.data
+  },
+
+  rollbackDeployment: async (
+    namespace: string,
+    name: string,
+    toRevision?: number
+  ): Promise<RollbackDeploymentResponse> => {
+    const res = await apiClient.post<{ data: RollbackDeploymentResponse }>(
+      `/k8s/deployments/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/rollback`,
+      { to_revision: toRevision ?? 0 }
     )
     return res.data.data
   },

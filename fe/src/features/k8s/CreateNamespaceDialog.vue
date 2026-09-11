@@ -52,7 +52,7 @@ async function handleCreate() {
     const nsName = name.value.trim().toLowerCase()
     await k8sStore.createNamespace({
       name: nsName,
-      labels: Object.keys(labels.value).length > 0 ? labels.value : undefined,
+      labels: Object.keys(labels.value).length > 0 ? labels.value : undefined
     })
     if (switchImmediately.value) {
       k8sStore.setNamespace(nsName)
@@ -89,9 +89,13 @@ function handleClose() {
     @update:visible="emit('update:visible', $event)"
   >
     <!-- Custom Header -->
-    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/90">
+    <div
+      class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/90"
+    >
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400 shrink-0">
+        <div
+          class="w-9 h-9 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400 shrink-0"
+        >
           <i class="pi pi-folder-plus text-base"></i>
         </div>
         <div>
@@ -113,7 +117,10 @@ function handleClose() {
 
     <!-- Content -->
     <form class="p-6 space-y-4" @submit.prevent="handleCreate">
-      <div v-if="errorMessage" class="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+      <div
+        v-if="errorMessage"
+        class="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2"
+      >
         <i class="pi pi-exclamation-circle text-sm"></i>
         <span>{{ errorMessage }}</span>
       </div>
@@ -166,7 +173,11 @@ function handleClose() {
             class="px-2 py-0.5 rounded text-[11px] font-mono bg-sky-500/10 text-sky-400 border border-sky-500/30 flex items-center gap-1.5"
           >
             <span>{{ key }}: {{ val }}</span>
-            <button type="button" class="hover:text-rose-400 cursor-pointer" @click="removeLabel(String(key))">
+            <button
+              type="button"
+              class="hover:text-rose-400 cursor-pointer"
+              @click="removeLabel(String(key))"
+            >
               &times;
             </button>
           </span>
@@ -181,13 +192,18 @@ function handleClose() {
           type="checkbox"
           class="rounded border-slate-700 text-sky-500 focus:ring-0 cursor-pointer"
         />
-        <label for="switch-ns" class="text-xs text-slate-600 dark:text-slate-300 cursor-pointer select-none">
+        <label
+          for="switch-ns"
+          class="text-xs text-slate-600 dark:text-slate-300 cursor-pointer select-none"
+        >
           Switch to this namespace immediately upon creation
         </label>
       </div>
 
       <!-- Footer Actions -->
-      <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2.5">
+      <div
+        class="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2.5"
+      >
         <Button
           label="Cancel"
           size="small"

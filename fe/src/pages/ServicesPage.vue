@@ -6,5 +6,4 @@ import { ServiceList } from '@/features/k8s'
   <ServiceList />
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

@@ -61,7 +61,7 @@ watch(
     } else {
       stopPolling()
     }
-  },
+  }
 )
 
 watch(scopeFilter, () => {
@@ -85,9 +85,9 @@ onBeforeUnmount(() => {
 })
 
 // Use eventsFeed if available, fallback to store events
-const allEvents = computed(() => k8sStore.eventsFeed && k8sStore.eventsFeed.length > 0
-    ? k8sStore.eventsFeed
-    : k8sStore.events)
+const allEvents = computed(() =>
+  k8sStore.eventsFeed && k8sStore.eventsFeed.length > 0 ? k8sStore.eventsFeed : k8sStore.events
+)
 
 const warningCount = computed(() => allEvents.value.filter((e) => e.type === 'Warning').length)
 const normalCount = computed(() => allEvents.value.filter((e) => e.type === 'Normal').length)
@@ -106,7 +106,7 @@ const filteredEvents = computed(() => {
         e.involved_object.toLowerCase().includes(q) ||
         e.reason.toLowerCase().includes(q) ||
         e.message.toLowerCase().includes(q) ||
-        (e.namespace && e.namespace.toLowerCase().includes(q)),
+        (e.namespace && e.namespace.toLowerCase().includes(q))
     )
   }
 
@@ -126,12 +126,16 @@ const filteredEvents = computed(() => {
     <template #header>
       <div class="flex items-center justify-between w-full pr-4 min-w-0">
         <div class="flex items-center gap-2.5 min-w-0 flex-1 mr-2">
-          <div class="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0">
+          <div
+            class="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0"
+          >
             <i class="pi pi-bell text-base"></i>
           </div>
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2">
-              <h3 class="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">Live Cluster Events</h3>
+              <h3 class="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">
+                Live Cluster Events
+              </h3>
               <span
                 v-if="autoRefresh"
                 class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"
@@ -139,7 +143,11 @@ const filteredEvents = computed(() => {
               ></span>
             </div>
             <p class="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate">
-              {{ scopeFilter === 'current' ? `Namespace: ${k8sStore.selectedNamespace}` : 'All Cluster Namespaces' }}
+              {{
+                scopeFilter === 'current'
+                  ? `Namespace: ${k8sStore.selectedNamespace}`
+                  : 'All Cluster Namespaces'
+              }}
             </p>
           </div>
         </div>
@@ -149,7 +157,11 @@ const filteredEvents = computed(() => {
           <button
             type="button"
             class="px-2 py-1 rounded text-[11px] font-mono border transition flex items-center gap-1 cursor-pointer shrink-0"
-            :class="autoRefresh ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-300 dark:border-slate-700'"
+            :class="
+              autoRefresh
+                ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/30'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-300 dark:border-slate-700'
+            "
             title="Toggle 5s live auto-refresh"
             @click="autoRefresh = !autoRefresh"
           >
@@ -171,7 +183,9 @@ const filteredEvents = computed(() => {
     </template>
 
     <!-- Filter Bar & Search -->
-    <div class="p-4 border-b border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-900/60 space-y-3 shrink-0">
+    <div
+      class="p-4 border-b border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-900/60 space-y-3 shrink-0"
+    >
       <!-- Search -->
       <div class="relative">
         <InputText
@@ -196,7 +210,11 @@ const filteredEvents = computed(() => {
           <button
             type="button"
             class="px-2.5 py-1 rounded-lg font-medium transition cursor-pointer"
-            :class="typeFilter === 'all' ? 'bg-slate-800 text-white font-semibold' : 'text-slate-400 hover:text-white'"
+            :class="
+              typeFilter === 'all'
+                ? 'bg-slate-800 text-white font-semibold'
+                : 'text-slate-400 hover:text-white'
+            "
             @click="typeFilter = 'all'"
           >
             All ({{ allEvents.length }})
@@ -206,7 +224,11 @@ const filteredEvents = computed(() => {
           <button
             type="button"
             class="px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1 cursor-pointer"
-            :class="typeFilter === 'Warning' ? 'bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/40' : 'text-slate-400 hover:text-amber-400'"
+            :class="
+              typeFilter === 'Warning'
+                ? 'bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/40'
+                : 'text-slate-400 hover:text-amber-400'
+            "
             @click="typeFilter = 'Warning'"
           >
             <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
@@ -217,7 +239,11 @@ const filteredEvents = computed(() => {
           <button
             type="button"
             class="px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1 cursor-pointer"
-            :class="typeFilter === 'Normal' ? 'bg-sky-500/20 text-sky-300 font-semibold border border-sky-500/40' : 'text-slate-400 hover:text-sky-400'"
+            :class="
+              typeFilter === 'Normal'
+                ? 'bg-sky-500/20 text-sky-300 font-semibold border border-sky-500/40'
+                : 'text-slate-400 hover:text-sky-400'
+            "
             @click="typeFilter = 'Normal'"
           >
             <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
@@ -226,11 +252,17 @@ const filteredEvents = computed(() => {
         </div>
 
         <!-- Scope switch -->
-        <div class="flex items-center bg-slate-200 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-300 dark:border-slate-700 shrink-0">
+        <div
+          class="flex items-center bg-slate-200 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-300 dark:border-slate-700 shrink-0"
+        >
           <button
             type="button"
             class="px-2 py-0.5 rounded text-[11px] transition font-medium cursor-pointer"
-            :class="scopeFilter === 'current' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-semibold shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-white'"
+            :class="
+              scopeFilter === 'current'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-semibold shadow-xs'
+                : 'text-slate-500 dark:text-slate-400 hover:text-white'
+            "
             @click="scopeFilter = 'current'"
           >
             Current NS
@@ -238,7 +270,11 @@ const filteredEvents = computed(() => {
           <button
             type="button"
             class="px-2 py-0.5 rounded text-[11px] transition font-medium cursor-pointer"
-            :class="scopeFilter === 'all' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-semibold shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-white'"
+            :class="
+              scopeFilter === 'all'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-semibold shadow-xs'
+                : 'text-slate-500 dark:text-slate-400 hover:text-white'
+            "
             @click="scopeFilter = 'all'"
           >
             Cluster-Wide
@@ -249,7 +285,10 @@ const filteredEvents = computed(() => {
 
     <!-- Events List -->
     <div class="p-4 space-y-3 overflow-y-auto max-h-[calc(100vh-170px)]">
-      <div v-if="isLoading && filteredEvents.length === 0" class="flex flex-col items-center justify-center py-12 text-slate-400">
+      <div
+        v-if="isLoading && filteredEvents.length === 0"
+        class="flex flex-col items-center justify-center py-12 text-slate-400"
+      >
         <i class="pi pi-spin pi-spinner text-2xl mb-2 text-amber-500"></i>
         <p class="text-sm">Loading cluster events feed...</p>
       </div>
@@ -258,7 +297,11 @@ const filteredEvents = computed(() => {
         <i class="pi pi-check-circle text-4xl mb-3 text-emerald-500"></i>
         <p class="text-base font-semibold text-slate-700 dark:text-slate-200">No matching events</p>
         <p class="text-xs text-slate-500 mt-1">
-          {{ searchQuery ? 'No events matching your filter search.' : 'Everything in this scope is running stably.' }}
+          {{
+            searchQuery
+              ? 'No events matching your filter search.'
+              : 'Everything in this scope is running stably.'
+          }}
         </p>
       </div>
 
@@ -279,7 +322,9 @@ const filteredEvents = computed(() => {
               :severity="evt.type === 'Warning' ? 'warn' : 'info'"
               class="font-mono text-[10px] px-2 py-0.5 shrink-0"
             />
-            <span class="text-xs font-semibold font-mono text-slate-800 dark:text-slate-200 break-all min-w-0">
+            <span
+              class="text-xs font-semibold font-mono text-slate-800 dark:text-slate-200 break-all min-w-0"
+            >
               {{ evt.involved_object }}
             </span>
             <span
@@ -289,15 +334,21 @@ const filteredEvents = computed(() => {
               {{ evt.namespace }}
             </span>
           </div>
-          <span class="text-[11px] text-slate-400 font-mono shrink-0 whitespace-nowrap pl-1">{{ evt.age }}</span>
+          <span class="text-[11px] text-slate-400 font-mono shrink-0 whitespace-nowrap pl-1">{{
+            evt.age
+          }}</span>
         </div>
 
-        <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-mono break-all [overflow-wrap:anywhere] min-w-0">
+        <p
+          class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-mono break-all [overflow-wrap:anywhere] min-w-0"
+        >
           {{ evt.message }}
         </p>
 
         <div v-if="evt.count > 1" class="mt-2 flex items-center justify-end">
-          <span class="text-[10px] px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700/60 text-slate-600 dark:text-slate-400 font-mono font-semibold shrink-0">
+          <span
+            class="text-[10px] px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700/60 text-slate-600 dark:text-slate-400 font-mono font-semibold shrink-0"
+          >
             Seen {{ evt.count }} times
           </span>
         </div>

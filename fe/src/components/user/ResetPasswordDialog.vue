@@ -33,7 +33,7 @@ watch(
       confirmPassword.value = ''
       errorMessage.value = ''
     }
-  },
+  }
 )
 
 const handleClose = () => {
@@ -58,7 +58,7 @@ const handleSubmit = async () => {
       severity: 'success',
       summary: 'Password Reset',
       detail: `Password for ${props.user.name} has been reset successfully.`,
-      life: 3000,
+      life: 3000
     })
     emit('success')
     handleClose()
@@ -84,11 +84,19 @@ const handleSubmit = async () => {
   >
     <div class="space-y-4 pt-2">
       <!-- Info notice -->
-      <div class="p-3 rounded-xl bg-sky-950/40 border border-sky-800/60 text-xs text-sky-300 flex items-start gap-2.5">
+      <div
+        class="p-3 rounded-xl bg-sky-950/40 border border-sky-800/60 text-xs text-sky-300 flex items-start gap-2.5"
+      >
         <i class="pi pi-key text-sky-400 mt-0.5"></i>
         <div>
-          <span>Resetting password for <b class="text-white">{{ user?.name }}</b> ({{ user?.email }}).</span>
-          <p class="text-[11px] text-sky-400/80 mt-1">The user will be required to authenticate with this new password on next sign in.</p>
+          <span
+            >Resetting password for <b class="text-white">{{ user?.name }}</b> ({{
+              user?.email
+            }}).</span
+          >
+          <p class="text-[11px] text-sky-400/80 mt-1">
+            The user will be required to authenticate with this new password on next sign in.
+          </p>
         </div>
       </div>
 

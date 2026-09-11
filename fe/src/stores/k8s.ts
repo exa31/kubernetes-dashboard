@@ -14,6 +14,7 @@ import type {
   DaemonSetItem,
   DeploymentDetail,
   DeploymentItem,
+  DeploymentRevision,
   EventItem,
   IngressItem,
   JobItem,
@@ -27,6 +28,7 @@ import type {
   ResourceQuotaItem,
   ResourceYAMLResponse,
   RolloutRestartResponse,
+  RollbackDeploymentResponse,
   SaveConfigMapPayload,
   SaveSecretPayload,
   SecretDetail,
@@ -35,7 +37,7 @@ import type {
   ServiceItem,
   StatefulSetItem,
   UpdateCronJobPayload,
-  UpdateDeploymentPayload,
+  UpdateDeploymentPayload
 } from '@/types'
 import { logger } from '@/utils'
 
@@ -198,14 +200,17 @@ export const useK8sStore = defineStore('k8s', () => {
         fetchIngresses(ns),
         fetchCronJobs(ns),
         fetchClusterInfo(),
-        fetchClusterOverview(),
+        fetchClusterOverview()
       ])
     } finally {
       isLoading.value = false
     }
   }
 
-  async function getCronJobDetail(name: string, ns: string = selectedNamespace.value): Promise<CronJobDetail> {
+  async function getCronJobDetail(
+    name: string,
+    ns: string = selectedNamespace.value
+  ): Promise<CronJobDetail> {
     return await k8sApi.getCronJob(ns, name)
   }
 
@@ -220,7 +225,11 @@ export const useK8sStore = defineStore('k8s', () => {
     }
   }
 
-  async function updateCronJob(name: string, payload: UpdateCronJobPayload, ns: string = selectedNamespace.value): Promise<CronJobDetail> {
+  async function updateCronJob(
+    name: string,
+    payload: UpdateCronJobPayload,
+    ns: string = selectedNamespace.value
+  ): Promise<CronJobDetail> {
     isActionLoading.value = true
     try {
       const res = await k8sApi.updateCronJob(ns, name, payload)
@@ -231,7 +240,10 @@ export const useK8sStore = defineStore('k8s', () => {
     }
   }
 
-  async function toggleSuspendCronJob(name: string, ns: string = selectedNamespace.value): Promise<boolean> {
+  async function toggleSuspendCronJob(
+    name: string,
+    ns: string = selectedNamespace.value
+  ): Promise<boolean> {
     isActionLoading.value = true
     try {
       const res = await k8sApi.toggleSuspendCronJob(ns, name)
@@ -242,7 +254,10 @@ export const useK8sStore = defineStore('k8s', () => {
     }
   }
 
-  async function triggerCronJobNow(name: string, ns: string = selectedNamespace.value): Promise<JobItem> {
+  async function triggerCronJobNow(
+    name: string,
+    ns: string = selectedNamespace.value
+  ): Promise<JobItem> {
     isActionLoading.value = true
     try {
       const res = await k8sApi.triggerCronJobNow(ns, name)
@@ -253,7 +268,10 @@ export const useK8sStore = defineStore('k8s', () => {
     }
   }
 
-  async function getCronJobJobs(name: string, ns: string = selectedNamespace.value): Promise<JobItem[]> {
+  async function getCronJobJobs(
+    name: string,
+    ns: string = selectedNamespace.value
+  ): Promise<JobItem[]> {
     return await k8sApi.getCronJobJobs(ns, name)
   }
 
@@ -267,11 +285,17 @@ export const useK8sStore = defineStore('k8s', () => {
     }
   }
 
-  async function getServiceDetail(name: string, ns: string = selectedNamespace.value): Promise<ServiceDetail> {
+  async function getServiceDetail(
+    name: string,
+    ns: string = selectedNamespace.value
+  ): Promise<ServiceDetail> {
     return await k8sApi.getService(ns, name)
   }
 
-  async function getIngressDetail(name: string, ns: string = selectedNamespace.value): Promise<IngressItem> {
+  async function getIngressDetail(
+    name: string,
+    ns: string = selectedNamespace.value
+  ): Promise<IngressItem> {
     return await k8sApi.getIngress(ns, name)
   }
 
@@ -305,7 +329,11 @@ export const useK8sStore = defineStore('k8s', () => {
     }
   }
 
-  async function scaleDeployment(name: string, replicas: number, ns: string = selectedNamespace.value): Promise<DeploymentDetail> {
+  async function scaleDeployment(
+    name: string,
+    replicas: number,
+    ns: string = selectedNamespace.value
+  ): Promise<DeploymentDetail> {
     isActionLoading.value = true
     try {
       const res = await k8sApi.scaleDeployment(ns, name, replicas)
@@ -316,7 +344,10 @@ export const useK8sStore = defineStore('k8s', () => {
     }
   }
 
-  async function getSecretDetail(name: string, ns: string = selectedNamespace.value): Promise<SecretDetail> {
+  async function getSecretDetail(
+    name: string,
+    ns: string = selectedNamespace.value
+  ): Promise<SecretDetail> {
     return await k8sApi.getSecret(ns, name)
   }
 
@@ -341,7 +372,10 @@ export const useK8sStore = defineStore('k8s', () => {
     }
   }
 
-  async function getConfigMapDetail(name: string, ns: string = selectedNamespace.value): Promise<ConfigMapDetail> {
+  async function getConfigMapDetail(
+    name: string,
+    ns: string = selectedNamespace.value
+  ): Promise<ConfigMapDetail> {
     return await k8sApi.getConfigMap(ns, name)
   }
 
@@ -366,7 +400,10 @@ export const useK8sStore = defineStore('k8s', () => {
     }
   }
 
-  async function restartDeployment(name: string, ns: string = selectedNamespace.value): Promise<RolloutRestartResponse> {
+  async function restartDeployment(
+    name: string,
+    ns: string = selectedNamespace.value
+  ): Promise<RolloutRestartResponse> {
     isActionLoading.value = true
     try {
       const res = await k8sApi.restartDeployment(ns, name)
@@ -377,14 +414,39 @@ export const useK8sStore = defineStore('k8s', () => {
     }
   }
 
-  async function getDeploymentDetail(name: string, ns: string = selectedNamespace.value): Promise<DeploymentDetail> {
+  async function getDeploymentHistory(
+    name: string,
+    ns: string = selectedNamespace.value
+  ): Promise<DeploymentRevision[]> {
+    return await k8sApi.getDeploymentHistory(ns, name)
+  }
+
+  async function rollbackDeployment(
+    name: string,
+    toRevision?: number,
+    ns: string = selectedNamespace.value
+  ): Promise<RollbackDeploymentResponse> {
+    isActionLoading.value = true
+    try {
+      const res = await k8sApi.rollbackDeployment(ns, name, toRevision)
+      await fetchDeployments(ns)
+      return res
+    } finally {
+      isActionLoading.value = false
+    }
+  }
+
+  async function getDeploymentDetail(
+    name: string,
+    ns: string = selectedNamespace.value
+  ): Promise<DeploymentDetail> {
     return await k8sApi.getDeploymentDetail(ns, name)
   }
 
   async function updateDeployment(
     name: string,
     payload: UpdateDeploymentPayload,
-    ns: string = selectedNamespace.value,
+    ns: string = selectedNamespace.value
   ): Promise<DeploymentDetail> {
     isActionLoading.value = true
     try {
@@ -396,19 +458,26 @@ export const useK8sStore = defineStore('k8s', () => {
     }
   }
 
-  async function getDeploymentPods(name: string, ns: string = selectedNamespace.value): Promise<PodItem[]> {
+  async function getDeploymentPods(
+    name: string,
+    ns: string = selectedNamespace.value
+  ): Promise<PodItem[]> {
     return await k8sApi.getDeploymentPods(ns, name)
   }
 
   async function getPodLogs(
     podName: string,
     params?: { container?: string; tail_lines?: number; timestamps?: boolean },
-    ns: string = selectedNamespace.value,
+    ns: string = selectedNamespace.value
   ): Promise<PodLogsResponse> {
     return await k8sApi.getPodLogs(ns, podName, params)
   }
 
-  async function applyYAML(yamlContent: string, targetNs: string = selectedNamespace.value, dryRun = false) {
+  async function applyYAML(
+    yamlContent: string,
+    targetNs: string = selectedNamespace.value,
+    dryRun = false
+  ) {
     isActionLoading.value = true
     try {
       const res = await k8sApi.applyYAML(yamlContent, targetNs, dryRun)
@@ -449,7 +518,11 @@ export const useK8sStore = defineStore('k8s', () => {
     }
   }
 
-  async function scaleStatefulSet(name: string, replicas: number, ns: string = selectedNamespace.value) {
+  async function scaleStatefulSet(
+    name: string,
+    replicas: number,
+    ns: string = selectedNamespace.value
+  ) {
     isActionLoading.value = true
     try {
       await k8sApi.scaleStatefulSet(ns, name, replicas)
@@ -505,7 +578,11 @@ export const useK8sStore = defineStore('k8s', () => {
     }
   }
 
-  async function getResourceYAML(kind: string, name: string, ns: string = selectedNamespace.value): Promise<ResourceYAMLResponse> {
+  async function getResourceYAML(
+    kind: string,
+    name: string,
+    ns: string = selectedNamespace.value
+  ): Promise<ResourceYAMLResponse> {
     return await k8sApi.getResourceYAML(kind, ns, name)
   }
 
@@ -635,6 +712,8 @@ export const useK8sStore = defineStore('k8s', () => {
     saveConfigMap,
     deleteConfigMap,
     restartDeployment,
+    getDeploymentHistory,
+    rollbackDeployment,
     getDeploymentDetail,
     updateDeployment,
     scaleDeployment,
@@ -655,6 +734,6 @@ export const useK8sStore = defineStore('k8s', () => {
     createNamespace,
     deleteNamespace,
     fetchResourceQuotas,
-    fetchEventsFeed,
+    fetchEventsFeed
   }
 })

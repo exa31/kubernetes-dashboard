@@ -36,7 +36,7 @@ watch(
       errorMessage.value = null
     }
   },
-  { immediate: true },
+  { immediate: true }
 )
 
 const scheduleDescription = computed(() => describeCron(schedule.value))
@@ -64,7 +64,7 @@ async function handleSave() {
     await k8sStore.updateCronJob(props.cronJob.name, {
       schedule: schedule.value,
       suspend: isSuspended.value,
-      containers: containers.value,
+      containers: containers.value
     })
     emit('saved')
     emit('update:visible', false)
@@ -89,9 +89,13 @@ async function handleSave() {
     @update:visible="(val) => emit('update:visible', val)"
   >
     <!-- Custom Header -->
-    <div class="px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+    <div
+      class="px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between"
+    >
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-base shrink-0">
+        <div
+          class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-base shrink-0"
+        >
           <i class="pi pi-clock"></i>
         </div>
         <div>
@@ -125,11 +129,15 @@ async function handleSave() {
       <!-- Schedule Section -->
       <div class="space-y-3">
         <div class="flex items-center justify-between">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+          <label
+            class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5"
+          >
             <i class="pi pi-clock text-amber-500"></i>
             <span>Schedule Expression</span>
           </label>
-          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 font-mono">
+          <span
+            class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 font-mono"
+          >
             {{ scheduleDescription }}
           </span>
         </div>
@@ -151,31 +159,31 @@ async function handleSave() {
           </button>
         </div>
 
-        <InputText
-          v-model="schedule"
-          placeholder="* * * * *"
-          class="font-mono text-sm w-full"
-        />
+        <InputText v-model="schedule" placeholder="* * * * *" class="font-mono text-sm w-full" />
         <p class="text-[11px] text-slate-400">
-          Format: <code>minute hour day-of-month month day-of-week</code> (e.g. <code>0 0 1 * *</code>)
+          Format: <code>minute hour day-of-month month day-of-week</code> (e.g.
+          <code>0 0 1 * *</code>)
         </p>
       </div>
 
       <!-- Suspend Toggle -->
-      <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+      <div
+        class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between"
+      >
         <div>
-          <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Suspend Schedule Execution</div>
+          <div class="text-xs font-bold text-slate-800 dark:text-slate-200">
+            Suspend Schedule Execution
+          </div>
           <div class="text-[11px] text-slate-400 mt-0.5">
-            When suspended, automatic scheduled executions are paused without deleting the job template.
+            When suspended, automatic scheduled executions are paused without deleting the job
+            template.
           </div>
         </div>
         <button
           type="button"
           :class="[
             'px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5',
-            isSuspended
-              ? 'bg-amber-500 text-white'
-              : 'bg-emerald-600 text-white'
+            isSuspended ? 'bg-amber-500 text-white' : 'bg-emerald-600 text-white'
           ]"
           @click="isSuspended = !isSuspended"
         >
@@ -186,7 +194,9 @@ async function handleSave() {
 
       <!-- Containers & Environment Variables -->
       <div class="space-y-4">
-        <label class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+        <label
+          class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5"
+        >
           <i class="pi pi-box text-sky-500"></i>
           <span>Container Image & Environment</span>
         </label>
@@ -198,19 +208,29 @@ async function handleSave() {
         >
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <span class="text-[11px] font-semibold text-slate-500 block mb-1">Container Name</span>
+              <span class="text-[11px] font-semibold text-slate-500 block mb-1"
+                >Container Name</span
+              >
               <InputText v-model="c.name" class="text-xs font-mono w-full" disabled />
             </div>
             <div>
-              <span class="text-[11px] font-semibold text-slate-500 block mb-1">Container Image</span>
-              <InputText v-model="c.image" class="text-xs font-mono w-full" placeholder="e.g. alpine:latest" />
+              <span class="text-[11px] font-semibold text-slate-500 block mb-1"
+                >Container Image</span
+              >
+              <InputText
+                v-model="c.image"
+                class="text-xs font-mono w-full"
+                placeholder="e.g. alpine:latest"
+              />
             </div>
           </div>
 
           <!-- Environment Variables Table -->
           <div class="pt-2">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-bold text-slate-600 dark:text-slate-400">Environment Variables</span>
+              <span class="text-xs font-bold text-slate-600 dark:text-slate-400"
+                >Environment Variables</span
+              >
               <Button
                 label="Add Variable"
                 icon="pi pi-plus"
@@ -221,16 +241,15 @@ async function handleSave() {
               />
             </div>
 
-            <div v-if="!c.env || c.env.length === 0" class="text-xs text-slate-400 italic py-2 text-center bg-slate-50 dark:bg-slate-900 rounded-lg">
+            <div
+              v-if="!c.env || c.env.length === 0"
+              class="text-xs text-slate-400 italic py-2 text-center bg-slate-50 dark:bg-slate-900 rounded-lg"
+            >
               No direct environment variables configured.
             </div>
 
             <div v-else class="space-y-2 max-h-48 overflow-y-auto pr-1">
-              <div
-                v-for="(envItem, eIdx) in c.env"
-                :key="eIdx"
-                class="flex items-center gap-2"
-              >
+              <div v-for="(envItem, eIdx) in c.env" :key="eIdx" class="flex items-center gap-2">
                 <InputText
                   v-model="envItem.name"
                   placeholder="KEY_NAME"
@@ -254,7 +273,9 @@ async function handleSave() {
           </div>
         </div>
       </div>
-      <div class="flex items-center justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-800">
+      <div
+        class="flex items-center justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-800"
+      >
         <Button
           label="Cancel"
           severity="secondary"
@@ -275,5 +296,4 @@ async function handleSave() {
   </Dialog>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

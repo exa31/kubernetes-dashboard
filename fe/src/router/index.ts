@@ -9,54 +9,54 @@ const router = createRouter({
       children: [
         {
           path: '',
-          redirect: '/overview',
+          redirect: '/overview'
         },
         {
           path: 'overview',
           name: 'ClusterOverview',
-          component: () => import('@/pages/ClusterOverviewPage.vue'),
+          component: () => import('@/pages/ClusterOverviewPage.vue')
         },
         {
           path: 'secrets',
           name: 'Secrets',
-          component: () => import('@/pages/SecretsPage.vue'),
+          component: () => import('@/pages/SecretsPage.vue')
         },
         {
           path: 'configmaps',
           name: 'ConfigMaps',
-          component: () => import('@/pages/ConfigMapsPage.vue'),
+          component: () => import('@/pages/ConfigMapsPage.vue')
         },
         {
           path: 'workloads',
           name: 'Workloads',
-          component: () => import('@/pages/WorkloadsPage.vue'),
+          component: () => import('@/pages/WorkloadsPage.vue')
         },
         {
           path: 'services',
           name: 'Services',
-          component: () => import('@/pages/ServicesPage.vue'),
+          component: () => import('@/pages/ServicesPage.vue')
         },
         {
           path: 'ingresses',
           name: 'Ingresses',
-          component: () => import('@/pages/IngressesPage.vue'),
+          component: () => import('@/pages/IngressesPage.vue')
         },
         {
           path: 'cronjobs',
           name: 'CronJobs',
-          component: () => import('@/pages/CronJobsPage.vue'),
+          component: () => import('@/pages/CronJobsPage.vue')
         },
         {
           path: 'storage',
           name: 'Storage',
-          component: () => import('@/pages/StoragePage.vue'),
+          component: () => import('@/pages/StoragePage.vue')
         },
         {
           path: 'users',
           name: 'Users',
-          component: () => import('@/pages/Users.vue'),
-        },
-      ],
+          component: () => import('@/pages/Users.vue')
+        }
+      ]
     },
     {
       path: '/auth',

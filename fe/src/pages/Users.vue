@@ -66,7 +66,7 @@ const formatDate = (dateStr?: string) => {
     return d.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric',
+      year: 'numeric'
     })
   } catch {
     return dateStr
@@ -79,20 +79,20 @@ const roleBadgeConfig = (role: UserRole) => {
       return {
         label: 'Admin',
         icon: 'pi-shield',
-        classes: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
+        classes: 'bg-purple-500/10 text-purple-400 border-purple-500/30'
       }
     case 'devops':
       return {
         label: 'DevOps',
         icon: 'pi-wrench',
-        classes: 'bg-sky-500/10 text-sky-400 border-sky-500/30',
+        classes: 'bg-sky-500/10 text-sky-400 border-sky-500/30'
       }
     case 'viewer':
     default:
       return {
         label: 'Viewer',
         icon: 'pi-eye',
-        classes: 'bg-slate-500/10 text-slate-400 border-slate-500/30',
+        classes: 'bg-slate-500/10 text-slate-400 border-slate-500/30'
       }
   }
 }
@@ -116,7 +116,9 @@ const roleBadgeConfig = (role: UserRole) => {
             </div>
             <div>
               <div class="flex items-center gap-2.5">
-                <h1 class="text-xl font-extrabold text-white tracking-tight">Team & Access Control (RBAC)</h1>
+                <h1 class="text-xl font-extrabold text-white tracking-tight">
+                  Team & Access Control (RBAC)
+                </h1>
                 <span
                   class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/30 flex items-center gap-1.5"
                 >
@@ -125,7 +127,8 @@ const roleBadgeConfig = (role: UserRole) => {
                 </span>
               </div>
               <p class="text-xs text-slate-400 mt-1 font-mono">
-                Manage team authorizations, cluster privileges, and user access levels across environments.
+                Manage team authorizations, cluster privileges, and user access levels across
+                environments.
               </p>
             </div>
           </div>
@@ -161,10 +164,13 @@ const roleBadgeConfig = (role: UserRole) => {
       <div class="flex items-center gap-2.5">
         <i class="pi pi-info-circle text-sky-400 text-sm"></i>
         <span>
-          You are signed in as <b class="text-white uppercase font-mono">{{ authStore.userRole }}</b>. User creation and privilege management are restricted to Cluster Administrators.
+          You are signed in as <b class="text-white uppercase font-mono">{{ authStore.userRole }}</b
+          >. User creation and privilege management are restricted to Cluster Administrators.
         </span>
       </div>
-      <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-400 border border-slate-700">
+      <span
+        class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-400 border border-slate-700"
+      >
         Read-Only Access
       </span>
     </div>
@@ -212,7 +218,9 @@ const roleBadgeConfig = (role: UserRole) => {
       </div>
 
       <!-- Active Users -->
-      <div class="p-4 rounded-xl bg-slate-900/70 border border-emerald-900/30 shadow-sm col-span-2 sm:col-span-1">
+      <div
+        class="p-4 rounded-xl bg-slate-900/70 border border-emerald-900/30 shadow-sm col-span-2 sm:col-span-1"
+      >
         <div class="flex items-center justify-between text-emerald-300 text-xs mb-1.5">
           <span>Active Status</span>
           <i class="pi pi-check-circle text-emerald-400"></i>
@@ -223,7 +231,9 @@ const roleBadgeConfig = (role: UserRole) => {
     </div>
 
     <!-- Filter & Search Toolbar -->
-    <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+    <div
+      class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4"
+    >
       <!-- Search Input -->
       <IconField class="w-full md:w-80">
         <InputIcon class="pi pi-search text-xs" />
@@ -241,9 +251,11 @@ const roleBadgeConfig = (role: UserRole) => {
           <button
             type="button"
             class="px-3 py-1 rounded-lg font-medium transition cursor-pointer"
-            :class="userStore.roleFilter === 'all'
-              ? 'bg-slate-800 text-white font-semibold shadow-xs'
-              : 'text-slate-400 hover:text-slate-200'"
+            :class="
+              userStore.roleFilter === 'all'
+                ? 'bg-slate-800 text-white font-semibold shadow-xs'
+                : 'text-slate-400 hover:text-slate-200'
+            "
             @click="userStore.roleFilter = 'all'"
           >
             All Roles
@@ -251,9 +263,11 @@ const roleBadgeConfig = (role: UserRole) => {
           <button
             type="button"
             class="px-3 py-1 rounded-lg font-medium transition cursor-pointer"
-            :class="userStore.roleFilter === 'admin'
-              ? 'bg-purple-900/50 text-purple-300 font-semibold shadow-xs'
-              : 'text-slate-400 hover:text-slate-200'"
+            :class="
+              userStore.roleFilter === 'admin'
+                ? 'bg-purple-900/50 text-purple-300 font-semibold shadow-xs'
+                : 'text-slate-400 hover:text-slate-200'
+            "
             @click="userStore.roleFilter = 'admin'"
           >
             Admin
@@ -261,9 +275,11 @@ const roleBadgeConfig = (role: UserRole) => {
           <button
             type="button"
             class="px-3 py-1 rounded-lg font-medium transition cursor-pointer"
-            :class="userStore.roleFilter === 'devops'
-              ? 'bg-sky-900/50 text-sky-300 font-semibold shadow-xs'
-              : 'text-slate-400 hover:text-slate-200'"
+            :class="
+              userStore.roleFilter === 'devops'
+                ? 'bg-sky-900/50 text-sky-300 font-semibold shadow-xs'
+                : 'text-slate-400 hover:text-slate-200'
+            "
             @click="userStore.roleFilter = 'devops'"
           >
             DevOps
@@ -271,9 +287,11 @@ const roleBadgeConfig = (role: UserRole) => {
           <button
             type="button"
             class="px-3 py-1 rounded-lg font-medium transition cursor-pointer"
-            :class="userStore.roleFilter === 'viewer'
-              ? 'bg-slate-800 text-slate-300 font-semibold shadow-xs'
-              : 'text-slate-400 hover:text-slate-200'"
+            :class="
+              userStore.roleFilter === 'viewer'
+                ? 'bg-slate-800 text-slate-300 font-semibold shadow-xs'
+                : 'text-slate-400 hover:text-slate-200'
+            "
             @click="userStore.roleFilter = 'viewer'"
           >
             Viewer
@@ -285,9 +303,11 @@ const roleBadgeConfig = (role: UserRole) => {
           <button
             type="button"
             class="px-2.5 py-1 rounded-lg font-medium transition cursor-pointer"
-            :class="userStore.statusFilter === 'all'
-              ? 'bg-slate-800 text-white font-semibold'
-              : 'text-slate-400 hover:text-slate-200'"
+            :class="
+              userStore.statusFilter === 'all'
+                ? 'bg-slate-800 text-white font-semibold'
+                : 'text-slate-400 hover:text-slate-200'
+            "
             @click="userStore.statusFilter = 'all'"
           >
             All
@@ -295,9 +315,11 @@ const roleBadgeConfig = (role: UserRole) => {
           <button
             type="button"
             class="px-2.5 py-1 rounded-lg font-medium transition cursor-pointer"
-            :class="userStore.statusFilter === 'active'
-              ? 'bg-emerald-900/50 text-emerald-300 font-semibold'
-              : 'text-slate-400 hover:text-slate-200'"
+            :class="
+              userStore.statusFilter === 'active'
+                ? 'bg-emerald-900/50 text-emerald-300 font-semibold'
+                : 'text-slate-400 hover:text-slate-200'
+            "
             @click="userStore.statusFilter = 'active'"
           >
             Active
@@ -305,9 +327,11 @@ const roleBadgeConfig = (role: UserRole) => {
           <button
             type="button"
             class="px-2.5 py-1 rounded-lg font-medium transition cursor-pointer"
-            :class="userStore.statusFilter === 'inactive'
-              ? 'bg-rose-900/50 text-rose-300 font-semibold'
-              : 'text-slate-400 hover:text-slate-200'"
+            :class="
+              userStore.statusFilter === 'inactive'
+                ? 'bg-rose-900/50 text-rose-300 font-semibold'
+                : 'text-slate-400 hover:text-slate-200'
+            "
             @click="userStore.statusFilter = 'inactive'"
           >
             Inactive
@@ -329,7 +353,9 @@ const roleBadgeConfig = (role: UserRole) => {
           <div class="py-12 text-center text-slate-500">
             <i class="pi pi-users text-3xl text-slate-600 mb-2"></i>
             <p class="font-medium text-sm text-slate-400">No team members found</p>
-            <p class="text-xs text-slate-500 mt-1">Try adjusting your search query or filter settings.</p>
+            <p class="text-xs text-slate-500 mt-1">
+              Try adjusting your search query or filter settings.
+            </p>
           </div>
         </template>
 
@@ -339,11 +365,13 @@ const roleBadgeConfig = (role: UserRole) => {
             <div class="flex items-center gap-3 py-1">
               <div
                 class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold font-mono shrink-0 shadow-inner"
-                :class="data.role === 'admin'
-                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
-                  : data.role === 'devops'
-                    ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
-                    : 'bg-slate-800 text-slate-300 border border-slate-700'"
+                :class="
+                  data.role === 'admin'
+                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                    : data.role === 'devops'
+                      ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
+                      : 'bg-slate-800 text-slate-300 border border-slate-700'
+                "
               >
                 {{ getInitials(data.name) }}
               </div>
@@ -374,10 +402,17 @@ const roleBadgeConfig = (role: UserRole) => {
                 <i class="pi" :class="roleBadgeConfig(data.role).icon"></i>
                 <span>{{ roleBadgeConfig(data.role).label }}</span>
               </span>
-              <div v-if="data.role !== 'admin'" class="flex items-center gap-1 text-[11px] font-mono text-slate-400">
+              <div
+                v-if="data.role !== 'admin'"
+                class="flex items-center gap-1 text-[11px] font-mono text-slate-400"
+              >
                 <i class="pi pi-box text-[10px] text-slate-500"></i>
                 <span class="truncate max-w-[180px]" :title="data.allowed_namespaces || '*'">
-                  {{ data.allowed_namespaces === '*' || !data.allowed_namespaces ? 'All Namespaces (*)' : data.allowed_namespaces }}
+                  {{
+                    data.allowed_namespaces === '*' || !data.allowed_namespaces
+                      ? 'All Namespaces (*)'
+                      : data.allowed_namespaces
+                  }}
                 </span>
               </div>
             </div>
@@ -389,9 +424,11 @@ const roleBadgeConfig = (role: UserRole) => {
           <template #body="{ data }">
             <span
               class="px-2 py-0.5 rounded text-[11px] font-semibold border inline-flex items-center gap-1.5"
-              :class="data.is_active
-                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                : 'bg-rose-500/10 text-rose-400 border-rose-500/30'"
+              :class="
+                data.is_active
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                  : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+              "
             >
               <span
                 class="w-1.5 h-1.5 rounded-full"

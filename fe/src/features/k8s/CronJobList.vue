@@ -55,7 +55,7 @@ const filteredCronJobs = computed(() => {
       cj.name.toLowerCase().includes(q) ||
       cj.schedule.toLowerCase().includes(q) ||
       cj.image.toLowerCase().includes(q) ||
-      describeCron(cj.schedule).toLowerCase().includes(q),
+      describeCron(cj.schedule).toLowerCase().includes(q)
   )
 })
 
@@ -67,7 +67,7 @@ async function openEditor(cj: CronJobItem) {
   } catch {
     notification.value = {
       type: 'error',
-      message: `Failed to load details for ${cj.name}`,
+      message: `Failed to load details for ${cj.name}`
     }
   }
 }
@@ -82,12 +82,12 @@ async function handleRunNow(cj: CronJobItem) {
     const job = await k8sStore.triggerCronJobNow(cj.name, cj.namespace)
     notification.value = {
       type: 'success',
-      message: `Job '${job.name}' triggered successfully for ${cj.name}!`,
+      message: `Job '${job.name}' triggered successfully for ${cj.name}!`
     }
   } catch (err: unknown) {
     notification.value = {
       type: 'error',
-      message: err instanceof Error ? err.message : 'Failed to trigger job',
+      message: err instanceof Error ? err.message : 'Failed to trigger job'
     }
   }
 }
@@ -97,12 +97,12 @@ async function handleToggleSuspend(cj: CronJobItem) {
     const isSuspended = await k8sStore.toggleSuspendCronJob(cj.name, cj.namespace)
     notification.value = {
       type: 'success',
-      message: `${cj.name} is now ${isSuspended ? 'Suspended (Paused)' : 'Active'}`,
+      message: `${cj.name} is now ${isSuspended ? 'Suspended (Paused)' : 'Active'}`
     }
   } catch (err: unknown) {
     notification.value = {
       type: 'error',
-      message: err instanceof Error ? err.message : 'Failed to toggle suspend',
+      message: err instanceof Error ? err.message : 'Failed to toggle suspend'
     }
   }
 }
@@ -115,39 +115,39 @@ function handleDelete(cj: CronJobItem) {
     rejectProps: {
       label: 'Cancel',
       severity: 'secondary',
-      outlined: true,
+      outlined: true
     },
     acceptProps: {
       label: 'Delete',
-      severity: 'danger',
+      severity: 'danger'
     },
     accept: async () => {
       try {
         await k8sStore.deleteCronJob(cj.name, cj.namespace)
         notification.value = {
           type: 'success',
-          message: `CronJob '${cj.name}' deleted successfully`,
+          message: `CronJob '${cj.name}' deleted successfully`
         }
         toast.add({
           severity: 'success',
           summary: 'Deleted',
           detail: `CronJob '${cj.name}' deleted successfully`,
-          life: 3000,
+          life: 3000
         })
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Failed to delete CronJob'
         notification.value = {
           type: 'error',
-          message: msg,
+          message: msg
         }
         toast.add({
           severity: 'error',
           summary: 'Delete Failed',
           detail: msg,
-          life: 4000,
+          life: 4000
         })
       }
-    },
+    }
   })
 }
 </script>
@@ -157,12 +157,17 @@ function handleDelete(cj: CronJobItem) {
     <!-- Top toolbar -->
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
+        <h1
+          class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5"
+        >
           <i class="pi pi-clock text-amber-500"></i>
           <span>CronJobs & Scheduled Tasks</span>
         </h1>
         <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">
-          Automated batch tasks, schedules, and manual run executions in <strong class="text-slate-700 dark:text-slate-300 font-mono">{{ selectedNamespace }}</strong>
+          Automated batch tasks, schedules, and manual run executions in
+          <strong class="text-slate-700 dark:text-slate-300 font-mono">{{
+            selectedNamespace
+          }}</strong>
         </p>
       </div>
 
@@ -205,10 +210,14 @@ function handleDelete(cj: CronJobItem) {
       <div class="flex items-center gap-2">
         <i class="pi pi-lock text-sm"></i>
         <span>
-          <strong>Read-Only Mode:</strong> You do not have permission to modify cronjobs in namespace <strong>{{ selectedNamespace }}</strong>.
+          <strong>Read-Only Mode:</strong> You do not have permission to modify cronjobs in
+          namespace <strong>{{ selectedNamespace }}</strong
+          >.
         </span>
       </div>
-      <span class="px-2 py-0.5 rounded text-[10px] uppercase font-mono font-semibold bg-amber-500/20 border border-amber-500/30">
+      <span
+        class="px-2 py-0.5 rounded text-[10px] uppercase font-mono font-semibold bg-amber-500/20 border border-amber-500/30"
+      >
         {{ authStore.user?.role || 'Viewer' }}
       </span>
     </div>
@@ -224,14 +233,22 @@ function handleDelete(cj: CronJobItem) {
       ]"
     >
       <div class="flex items-center gap-2 font-medium">
-        <i :class="notification.type === 'success' ? 'pi pi-check-circle' : 'pi pi-exclamation-circle'"></i>
+        <i
+          :class="
+            notification.type === 'success' ? 'pi pi-check-circle' : 'pi pi-exclamation-circle'
+          "
+        ></i>
         <span>{{ notification.message }}</span>
       </div>
-      <button class="text-xs hover:underline cursor-pointer" @click="notification = null">Dismiss</button>
+      <button class="text-xs hover:underline cursor-pointer" @click="notification = null">
+        Dismiss
+      </button>
     </div>
 
     <!-- PrimeVue DataTable for CronJobs -->
-    <div class="w-full rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden bg-white dark:bg-slate-950">
+    <div
+      class="w-full rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden bg-white dark:bg-slate-950"
+    >
       <DataTable
         :value="filteredCronJobs"
         :loading="isLoading"
@@ -246,7 +263,9 @@ function handleDelete(cj: CronJobItem) {
         <Column field="name" header="CronJob Name" sortable>
           <template #body="{ data }">
             <div class="flex items-center gap-3 py-1">
-              <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold shrink-0">
+              <div
+                class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold shrink-0"
+              >
                 <i class="pi pi-clock text-xs"></i>
               </div>
               <div>
@@ -268,7 +287,9 @@ function handleDelete(cj: CronJobItem) {
         <Column field="schedule" header="Schedule" sortable>
           <template #body="{ data }">
             <div>
-              <span class="px-2 py-0.5 rounded font-mono text-xs bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 font-semibold">
+              <span
+                class="px-2 py-0.5 rounded font-mono text-xs bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 font-semibold"
+              >
                 {{ data.schedule }}
               </span>
               <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
@@ -287,7 +308,10 @@ function handleDelete(cj: CronJobItem) {
                 :severity="data.suspend ? 'warn' : 'success'"
                 class="font-mono text-xs"
               />
-              <div v-if="data.active_jobs > 0" class="text-[10px] text-sky-600 dark:text-sky-400 font-mono font-semibold">
+              <div
+                v-if="data.active_jobs > 0"
+                class="text-[10px] text-sky-600 dark:text-sky-400 font-mono font-semibold"
+              >
                 {{ data.active_jobs }} running
               </div>
             </div>
@@ -297,7 +321,10 @@ function handleDelete(cj: CronJobItem) {
         <!-- Last Schedule Column -->
         <Column header="Last Schedule" style="width: 170px">
           <template #body="{ data }">
-            <div v-if="data.last_schedule_time" class="text-xs text-slate-600 dark:text-slate-300 font-mono">
+            <div
+              v-if="data.last_schedule_time"
+              class="text-xs text-slate-600 dark:text-slate-300 font-mono"
+            >
               {{ formatDate(data.last_schedule_time) }}
             </div>
             <span v-else class="text-xs text-slate-400 italic">Never scheduled</span>
@@ -305,7 +332,12 @@ function handleDelete(cj: CronJobItem) {
         </Column>
 
         <!-- Actions Column -->
-        <Column header="Actions" header-style="text-align: right" body-style="text-align: right" style="width: 250px">
+        <Column
+          header="Actions"
+          header-style="text-align: right"
+          body-style="text-align: right"
+          style="width: 250px"
+        >
           <template #body="{ data }">
             <div class="flex items-center justify-end gap-1.5">
               <!-- Run Now Button -->
@@ -376,7 +408,9 @@ function handleDelete(cj: CronJobItem) {
           <div class="py-16 text-center text-slate-400">
             <i class="pi pi-clock text-4xl mb-3 text-slate-300 dark:text-slate-700"></i>
             <h3 class="font-semibold text-slate-700 dark:text-slate-300">No CronJobs Found</h3>
-            <p class="text-xs text-slate-500 mt-1">There are no CronJobs configured in namespace {{ selectedNamespace }}.</p>
+            <p class="text-xs text-slate-500 mt-1">
+              There are no CronJobs configured in namespace {{ selectedNamespace }}.
+            </p>
           </div>
         </template>
       </DataTable>
@@ -412,5 +446,4 @@ function handleDelete(cj: CronJobItem) {
   </div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

@@ -69,4 +69,24 @@ func TestK8sService_OfflineDemoMode(t *testing.T) {
 	if saved.Data["APP_VERSION"] != "2.0.0" {
 		t.Errorf("expected APP_VERSION to be updated to '2.0.0'")
 	}
+
+	// 6. Rollout Revision History & Rollback
+	history, err := svc.GetDeploymentHistory(ctx, "dev-coffe", "be-chat-app")
+	if err != nil {
+		t.Fatalf("expected no error getting deployment history, got %v", err)
+	}
+	if len(history) == 0 {
+		t.Fatalf("expected at least 1 revision in history")
+	}
+	if history[0].Revision != 3 || !history[0].IsCurrent {
+		t.Errorf("expected latest revision 3 to be current")
+	}
+
+	rbRes, err := svc.RollbackDeployment(ctx, "dev-coffe", "be-chat-app", 2)
+	if err != nil {
+		t.Fatalf("expected no error rolling back deployment, got %v", err)
+	}
+	if rbRes.ToRevision != 2 {
+		t.Errorf("expected rolled back to revision 2, got %d", rbRes.ToRevision)
+	}
 }

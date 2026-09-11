@@ -6,5 +6,4 @@ import { IngressList } from '@/features/k8s'
   <IngressList />
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

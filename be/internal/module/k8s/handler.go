@@ -200,6 +200,36 @@ func (h *K8sHandler) RolloutRestartDeployment() fiber.Handler {
 	}
 }
 
+// GetDeploymentHistory handles GET /api/v1/k8s/deployments/:namespace/:name/history.
+func (h *K8sHandler) GetDeploymentHistory() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		namespace := c.Params("namespace")
+		name := c.Params("name")
+		history, err := h.service.GetDeploymentHistory(c.Context(), namespace, name)
+		if err != nil {
+			return err
+		}
+		return response.SuccessResponse(c, history, "Deployment history retrieved successfully")
+	}
+}
+
+// RollbackDeployment handles POST /api/v1/k8s/deployments/:namespace/:name/rollback.
+func (h *K8sHandler) RollbackDeployment() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		namespace := c.Params("namespace")
+		name := c.Params("name")
+
+		var req RollbackDeploymentRequest
+		_ = c.BodyParser(&req)
+
+		res, err := h.service.RollbackDeployment(c.Context(), namespace, name, req.ToRevision)
+		if err != nil {
+			return err
+		}
+		return response.SuccessResponse(c, res, res.Message)
+	}
+}
+
 // GetDeployment handles GET /api/v1/k8s/deployments/:namespace/:name.
 func (h *K8sHandler) GetDeployment() fiber.Handler {
 	return func(c *fiber.Ctx) error {

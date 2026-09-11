@@ -22,7 +22,7 @@ const handleLogin = async () => {
   try {
     await authStore.login({
       email: email.value.trim(),
-      password: password.value,
+      password: password.value
     })
     router.push('/')
   } catch (err: unknown) {
@@ -56,7 +56,9 @@ const handleLogin = async () => {
 
     <form class="space-y-4" @submit.prevent="handleLogin">
       <div>
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+        <label
+          class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+        >
           Email
         </label>
         <IconField class="w-full">
@@ -73,7 +75,9 @@ const handleLogin = async () => {
       </div>
 
       <div>
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+        <label
+          class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5"
+        >
           Password
         </label>
         <IconField class="w-full">
@@ -99,5 +103,4 @@ const handleLogin = async () => {
   </div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

@@ -12,6 +12,7 @@ import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import DeploymentEditorDialog from '@/features/k8s/DeploymentEditorDialog.vue'
+import DeploymentRollbackDialog from '@/features/k8s/DeploymentRollbackDialog.vue'
 import PodLogsDialog from '@/features/k8s/PodLogsDialog.vue'
 import ResourceYamlDialog from '@/features/k8s/ResourceYamlDialog.vue'
 import WebTerminalDialog from '@/features/k8s/WebTerminalDialog.vue'
@@ -30,7 +31,7 @@ const {
   podMetrics,
   selectedNamespace,
   isLoading,
-  isActionLoading,
+  isActionLoading
 } = storeToRefs(k8sStore)
 
 const canMutate = computed(() => authStore.canMutateNamespace(selectedNamespace.value))
@@ -46,6 +47,7 @@ const isLogsOpen = ref(false)
 const isEditorOpen = ref(false)
 const isTerminalOpen = ref(false)
 const isYamlOpen = ref(false)
+const isRollbackOpen = ref(false)
 
 const selectedDeploymentName = ref('')
 const selectedPod = ref<PodItem | null>(null)
@@ -92,14 +94,14 @@ const quickScaleDeployment = async (item: DeploymentItem, newReplicas: number) =
       severity: 'success',
       summary: 'Scale Success',
       detail: `${item.name}: ${msg}`,
-      life: 3000,
+      life: 3000
     })
   } catch (err: unknown) {
     toast.add({
       severity: 'error',
       summary: 'Scale Deployment Failed',
       detail: err instanceof Error ? err.message : 'Unknown error',
-      life: 5000,
+      life: 5000
     })
   } finally {
     isScaling.value[item.name] = false
@@ -118,14 +120,14 @@ const quickScaleStatefulSet = async (item: StatefulSetItem, newReplicas: number)
       severity: 'success',
       summary: 'Scale Success',
       detail: `${item.name}: ${msg}`,
-      life: 3000,
+      life: 3000
     })
   } catch (err: unknown) {
     toast.add({
       severity: 'error',
       summary: 'Scale StatefulSet Failed',
       detail: err instanceof Error ? err.message : 'Unknown error',
-      life: 5000,
+      life: 5000
     })
   } finally {
     isScaling.value[item.name] = false
@@ -147,7 +149,7 @@ const filteredDeployments = computed(() => {
     (d) =>
       d.name.toLowerCase().includes(q) ||
       d.images.some((img) => img.toLowerCase().includes(q)) ||
-      d.env_secrets.some((s) => s.toLowerCase().includes(q)),
+      d.env_secrets.some((s) => s.toLowerCase().includes(q))
   )
 })
 
@@ -155,9 +157,7 @@ const filteredStatefulSets = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   if (!q) return statefulsets.value
   return statefulsets.value.filter(
-    (s) =>
-      s.name.toLowerCase().includes(q) ||
-      s.images.some((img) => img.toLowerCase().includes(q)),
+    (s) => s.name.toLowerCase().includes(q) || s.images.some((img) => img.toLowerCase().includes(q))
   )
 })
 
@@ -165,9 +165,7 @@ const filteredDaemonSets = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   if (!q) return daemonsets.value
   return daemonsets.value.filter(
-    (d) =>
-      d.name.toLowerCase().includes(q) ||
-      d.images.some((img) => img.toLowerCase().includes(q)),
+    (d) => d.name.toLowerCase().includes(q) || d.images.some((img) => img.toLowerCase().includes(q))
   )
 })
 
@@ -180,7 +178,7 @@ const filteredPods = computed(() => {
       p.phase.toLowerCase().includes(q) ||
       (p.status_reason && p.status_reason.toLowerCase().includes(q)) ||
       (p.node && p.node.toLowerCase().includes(q)) ||
-      (p.ip && p.ip.includes(q)),
+      (p.ip && p.ip.includes(q))
   )
 })
 
@@ -207,11 +205,16 @@ const openEditor = (item: DeploymentItem) => {
   isEditorOpen.value = true
 }
 
+const openRollbackDialog = (item: DeploymentItem) => {
+  selectedDeploymentName.value = item.name
+  isRollbackOpen.value = true
+}
+
 const openYamlModal = (kind: string, name: string) => {
   selectedYamlResource.value = {
     kind,
     name,
-    namespace: selectedNamespace.value,
+    namespace: selectedNamespace.value
   }
   isYamlOpen.value = true
 }
@@ -224,11 +227,11 @@ const restartDeployment = (item: DeploymentItem) => {
     rejectProps: {
       label: 'Cancel',
       severity: 'secondary',
-      outlined: true,
+      outlined: true
     },
     acceptProps: {
       label: 'Restart',
-      severity: 'warn',
+      severity: 'warn'
     },
     accept: async () => {
       try {
@@ -239,17 +242,17 @@ const restartDeployment = (item: DeploymentItem) => {
           severity: 'info',
           summary: 'Rollout Restarted',
           detail: msg,
-          life: 4000,
+          life: 4000
         })
       } catch (err: unknown) {
         toast.add({
           severity: 'error',
           summary: 'Restart Failed',
           detail: err instanceof Error ? err.message : 'Failed to restart deployment',
-          life: 5000,
+          life: 5000
         })
       }
-    },
+    }
   })
 }
 
@@ -261,11 +264,11 @@ const restartStatefulSet = (item: StatefulSetItem) => {
     rejectProps: {
       label: 'Cancel',
       severity: 'secondary',
-      outlined: true,
+      outlined: true
     },
     acceptProps: {
       label: 'Restart',
-      severity: 'warn',
+      severity: 'warn'
     },
     accept: async () => {
       try {
@@ -276,17 +279,17 @@ const restartStatefulSet = (item: StatefulSetItem) => {
           severity: 'info',
           summary: 'Rollout Restarted',
           detail: msg,
-          life: 4000,
+          life: 4000
         })
       } catch (err: unknown) {
         toast.add({
           severity: 'error',
           summary: 'Restart Failed',
           detail: err instanceof Error ? err.message : 'Failed to restart statefulset',
-          life: 5000,
+          life: 5000
         })
       }
-    },
+    }
   })
 }
 
@@ -298,11 +301,11 @@ const restartDaemonSet = (item: DaemonSetItem) => {
     rejectProps: {
       label: 'Cancel',
       severity: 'secondary',
-      outlined: true,
+      outlined: true
     },
     acceptProps: {
       label: 'Restart',
-      severity: 'warn',
+      severity: 'warn'
     },
     accept: async () => {
       try {
@@ -313,17 +316,17 @@ const restartDaemonSet = (item: DaemonSetItem) => {
           severity: 'info',
           summary: 'Rollout Restarted',
           detail: msg,
-          life: 4000,
+          life: 4000
         })
       } catch (err: unknown) {
         toast.add({
           severity: 'error',
           summary: 'Restart Failed',
           detail: err instanceof Error ? err.message : 'Failed to restart daemonset',
-          life: 5000,
+          life: 5000
         })
       }
-    },
+    }
   })
 }
 
@@ -335,11 +338,11 @@ const deletePodConfirm = (pod: PodItem) => {
     rejectProps: {
       label: 'Cancel',
       severity: 'secondary',
-      outlined: true,
+      outlined: true
     },
     acceptProps: {
       label: 'Redeploy',
-      severity: 'danger',
+      severity: 'danger'
     },
     accept: async () => {
       try {
@@ -350,17 +353,17 @@ const deletePodConfirm = (pod: PodItem) => {
           severity: 'warn',
           summary: 'Pod Terminated',
           detail: msg,
-          life: 4000,
+          life: 4000
         })
       } catch (err: unknown) {
         toast.add({
           severity: 'error',
           summary: 'Redeploy Failed',
           detail: err instanceof Error ? err.message : 'Failed to delete pod',
-          life: 5000,
+          life: 5000
         })
       }
-    },
+    }
   })
 }
 
@@ -387,12 +390,17 @@ function getPhaseColor(phase: string, reason?: string) {
     <!-- Top Header -->
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
+        <h1
+          class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5"
+        >
           <i class="pi pi-objects-column text-sky-500"></i>
           <span>Workload Management</span>
         </h1>
         <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">
-          Monitor Deployments, StatefulSets, DaemonSets, and inspect/redeploy Pods in <strong class="text-slate-700 dark:text-slate-300 font-mono">{{ selectedNamespace }}</strong>
+          Monitor Deployments, StatefulSets, DaemonSets, and inspect/redeploy Pods in
+          <strong class="text-slate-700 dark:text-slate-300 font-mono">{{
+            selectedNamespace
+          }}</strong>
         </p>
       </div>
 
@@ -416,7 +424,9 @@ function getPhaseColor(phase: string, reason?: string) {
     >
       <div class="flex items-center gap-2">
         <i class="pi pi-check-circle text-base text-sky-400"></i>
-        <span><strong>{{ restartNotification.title }}:</strong> {{ restartNotification.message }}</span>
+        <span
+          ><strong>{{ restartNotification.title }}:</strong> {{ restartNotification.message }}</span
+        >
       </div>
       <button class="opacity-70 hover:opacity-100" @click="restartNotification = null">
         <i class="pi pi-times"></i>
@@ -432,11 +442,17 @@ function getPhaseColor(phase: string, reason?: string) {
         <i class="pi pi-shield text-amber-400 text-sm"></i>
         <span>
           <b class="text-white uppercase font-mono">{{ authStore.userRole }}</b> Mode:
-          {{ authStore.isViewer ? 'Viewer role is restricted to read-only observability.' : 'Namespace ' + selectedNamespace + ' is outside your DevOps allowed boundary.' }}
+          {{
+            authStore.isViewer
+              ? 'Viewer role is restricted to read-only observability.'
+              : 'Namespace ' + selectedNamespace + ' is outside your DevOps allowed boundary.'
+          }}
           Mutating actions (scale, restart, edit, delete, shell) are disabled.
         </span>
       </div>
-      <span class="px-2.5 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400 border border-slate-700">
+      <span
+        class="px-2.5 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400 border border-slate-700"
+      >
         Read-Only
       </span>
     </div>
@@ -446,9 +462,11 @@ function getPhaseColor(phase: string, reason?: string) {
       <button
         type="button"
         class="px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2"
-        :class="activeTab === 'deployments'
-          ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30 shadow-sm'
-          : 'text-slate-600 dark:text-slate-400 hover:text-white hover:bg-slate-800/40'"
+        :class="
+          activeTab === 'deployments'
+            ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30 shadow-sm'
+            : 'text-slate-600 dark:text-slate-400 hover:text-white hover:bg-slate-800/40'
+        "
         @click="activeTab = 'deployments'"
       >
         <i class="pi pi-server text-xs"></i>
@@ -461,9 +479,11 @@ function getPhaseColor(phase: string, reason?: string) {
       <button
         type="button"
         class="px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2"
-        :class="activeTab === 'statefulsets'
-          ? 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 shadow-sm'
-          : 'text-slate-600 dark:text-slate-400 hover:text-white hover:bg-slate-800/40'"
+        :class="
+          activeTab === 'statefulsets'
+            ? 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 shadow-sm'
+            : 'text-slate-600 dark:text-slate-400 hover:text-white hover:bg-slate-800/40'
+        "
         @click="activeTab = 'statefulsets'"
       >
         <i class="pi pi-database text-xs"></i>
@@ -476,9 +496,11 @@ function getPhaseColor(phase: string, reason?: string) {
       <button
         type="button"
         class="px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2"
-        :class="activeTab === 'daemonsets'
-          ? 'bg-teal-500/15 text-teal-400 border border-teal-500/30 shadow-sm'
-          : 'text-slate-600 dark:text-slate-400 hover:text-white hover:bg-slate-800/40'"
+        :class="
+          activeTab === 'daemonsets'
+            ? 'bg-teal-500/15 text-teal-400 border border-teal-500/30 shadow-sm'
+            : 'text-slate-600 dark:text-slate-400 hover:text-white hover:bg-slate-800/40'
+        "
         @click="activeTab = 'daemonsets'"
       >
         <i class="pi pi-clone text-xs"></i>
@@ -491,9 +513,11 @@ function getPhaseColor(phase: string, reason?: string) {
       <button
         type="button"
         class="px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2"
-        :class="activeTab === 'pods'
-          ? 'bg-purple-500/15 text-purple-400 border border-purple-500/30 shadow-sm'
-          : 'text-slate-600 dark:text-slate-400 hover:text-white hover:bg-slate-800/40'"
+        :class="
+          activeTab === 'pods'
+            ? 'bg-purple-500/15 text-purple-400 border border-purple-500/30 shadow-sm'
+            : 'text-slate-600 dark:text-slate-400 hover:text-white hover:bg-slate-800/40'
+        "
         @click="activeTab = 'pods'"
       >
         <i class="pi pi-box text-xs"></i>
@@ -517,7 +541,10 @@ function getPhaseColor(phase: string, reason?: string) {
     </div>
 
     <!-- TAB 1: Deployments -->
-    <div v-if="activeTab === 'deployments'" class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl bg-white dark:bg-slate-900/90">
+    <div
+      v-if="activeTab === 'deployments'"
+      class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl bg-white dark:bg-slate-900/90"
+    >
       <DataTable
         :value="filteredDeployments"
         :loading="isLoading"
@@ -528,11 +555,15 @@ function getPhaseColor(phase: string, reason?: string) {
         <Column field="name" header="Name" sortable style="min-width: 14rem">
           <template #body="{ data }">
             <div class="flex items-center gap-2.5">
-              <div class="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 shrink-0">
+              <div
+                class="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 shrink-0"
+              >
                 <i class="pi pi-server text-xs"></i>
               </div>
               <div>
-                <span class="font-bold text-slate-900 dark:text-slate-100 text-xs">{{ data.name }}</span>
+                <span class="font-bold text-slate-900 dark:text-slate-100 text-xs">{{
+                  data.name
+                }}</span>
                 <div class="text-[11px] text-slate-400 font-mono">{{ data.namespace }}</div>
               </div>
             </div>
@@ -545,13 +576,19 @@ function getPhaseColor(phase: string, reason?: string) {
             <div class="flex items-center gap-2">
               <span
                 class="px-2 py-0.5 rounded text-xs font-mono font-bold"
-                :class="data.ready_replicas === data.replicas ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'"
+                :class="
+                  data.ready_replicas === data.replicas
+                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                "
               >
                 {{ data.ready_replicas }}/{{ data.replicas }}
               </span>
 
               <!-- Quick scale buttons -->
-              <div class="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-lg border border-slate-700">
+              <div
+                class="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-lg border border-slate-700"
+              >
                 <button
                   type="button"
                   class="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition text-[10px] disabled:opacity-30 disabled:cursor-not-allowed"
@@ -602,7 +639,9 @@ function getPhaseColor(phase: string, reason?: string) {
               >
                 {{ sec }}
               </span>
-              <span v-if="data.env_secrets.length === 0" class="text-xs text-slate-500 font-mono">None</span>
+              <span v-if="data.env_secrets.length === 0" class="text-xs text-slate-500 font-mono"
+                >None</span
+              >
             </div>
           </template>
         </Column>
@@ -615,7 +654,7 @@ function getPhaseColor(phase: string, reason?: string) {
         </Column>
 
         <!-- Actions -->
-        <Column header="Actions" align-frozen="right" style="min-width: 18rem; text-align: right">
+        <Column header="Actions" align-frozen="right" style="min-width: 22rem; text-align: right">
           <template #body="{ data }">
             <div class="flex items-center justify-end gap-1.5">
               <!-- Logs -->
@@ -645,18 +684,32 @@ function getPhaseColor(phase: string, reason?: string) {
                 size="small"
                 class="btn-blue text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 :disabled="!canMutate"
-                :title="!canMutate ? 'Read-only: cannot edit deployment' : 'Edit replicas & containers'"
+                :title="
+                  !canMutate ? 'Read-only: cannot edit deployment' : 'Edit replicas & containers'
+                "
                 @click="openEditor(data)"
+              />
+
+              <!-- Rollback / History -->
+              <Button
+                label="Rollback"
+                icon="pi pi-undo"
+                size="small"
+                class="btn-amber text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer"
+                title="View rollout history & rollback revision"
+                @click="openRollbackDialog(data)"
               />
 
               <!-- Rollout Restart -->
               <Button
                 icon="pi pi-refresh"
                 size="small"
-                class="btn-amber text-xs px-2 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                class="btn-rose text-xs px-2 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 :loading="isActionLoading"
                 :disabled="!canMutate"
-                :title="!canMutate ? 'Read-only: cannot restart deployment' : 'Trigger Rollout Restart'"
+                :title="
+                  !canMutate ? 'Read-only: cannot restart deployment' : 'Trigger Rollout Restart'
+                "
                 @click="restartDeployment(data)"
               />
             </div>
@@ -667,14 +720,19 @@ function getPhaseColor(phase: string, reason?: string) {
           <div class="py-12 text-center text-slate-400">
             <i class="pi pi-server text-3xl mb-2 text-slate-500"></i>
             <h3 class="font-semibold text-slate-200">No Deployments Found</h3>
-            <p class="text-xs text-slate-500 mt-1">No deployments found matching filter in {{ selectedNamespace }}.</p>
+            <p class="text-xs text-slate-500 mt-1">
+              No deployments found matching filter in {{ selectedNamespace }}.
+            </p>
           </div>
         </template>
       </DataTable>
     </div>
 
     <!-- TAB 2: StatefulSets -->
-    <div v-if="activeTab === 'statefulsets'" class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl bg-white dark:bg-slate-900/90">
+    <div
+      v-if="activeTab === 'statefulsets'"
+      class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl bg-white dark:bg-slate-900/90"
+    >
       <DataTable
         :value="filteredStatefulSets"
         :loading="isLoading"
@@ -684,11 +742,15 @@ function getPhaseColor(phase: string, reason?: string) {
         <Column field="name" header="Name" sortable style="min-width: 14rem">
           <template #body="{ data }">
             <div class="flex items-center gap-2.5">
-              <div class="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+              <div
+                class="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0"
+              >
                 <i class="pi pi-database text-xs"></i>
               </div>
               <div>
-                <span class="font-bold text-slate-900 dark:text-slate-100 text-xs">{{ data.name }}</span>
+                <span class="font-bold text-slate-900 dark:text-slate-100 text-xs">{{
+                  data.name
+                }}</span>
                 <div class="text-[11px] text-slate-400 font-mono">{{ data.namespace }}</div>
               </div>
             </div>
@@ -700,13 +762,19 @@ function getPhaseColor(phase: string, reason?: string) {
             <div class="flex items-center gap-2">
               <span
                 class="px-2 py-0.5 rounded text-xs font-mono font-bold"
-                :class="data.ready_replicas === data.replicas ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'"
+                :class="
+                  data.ready_replicas === data.replicas
+                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                "
               >
                 {{ data.ready_replicas }}/{{ data.replicas }}
               </span>
 
               <!-- Quick scale -->
-              <div class="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-lg border border-slate-700">
+              <div
+                class="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-lg border border-slate-700"
+              >
                 <button
                   type="button"
                   class="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition text-[10px] disabled:opacity-30"
@@ -776,14 +844,19 @@ function getPhaseColor(phase: string, reason?: string) {
           <div class="py-12 text-center text-slate-400">
             <i class="pi pi-database text-3xl mb-2 text-slate-500"></i>
             <h3 class="font-semibold text-slate-200">No StatefulSets Found</h3>
-            <p class="text-xs text-slate-500 mt-1">There are no StatefulSets in {{ selectedNamespace }}.</p>
+            <p class="text-xs text-slate-500 mt-1">
+              There are no StatefulSets in {{ selectedNamespace }}.
+            </p>
           </div>
         </template>
       </DataTable>
     </div>
 
     <!-- TAB 3: DaemonSets -->
-    <div v-if="activeTab === 'daemonsets'" class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl bg-white dark:bg-slate-900/90">
+    <div
+      v-if="activeTab === 'daemonsets'"
+      class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl bg-white dark:bg-slate-900/90"
+    >
       <DataTable
         :value="filteredDaemonSets"
         :loading="isLoading"
@@ -793,11 +866,15 @@ function getPhaseColor(phase: string, reason?: string) {
         <Column field="name" header="Name" sortable style="min-width: 14rem">
           <template #body="{ data }">
             <div class="flex items-center gap-2.5">
-              <div class="w-7 h-7 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 shrink-0">
+              <div
+                class="w-7 h-7 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 shrink-0"
+              >
                 <i class="pi pi-clone text-xs"></i>
               </div>
               <div>
-                <span class="font-bold text-slate-900 dark:text-slate-100 text-xs">{{ data.name }}</span>
+                <span class="font-bold text-slate-900 dark:text-slate-100 text-xs">{{
+                  data.name
+                }}</span>
                 <div class="text-[11px] text-slate-400 font-mono">{{ data.namespace }}</div>
               </div>
             </div>
@@ -807,7 +884,9 @@ function getPhaseColor(phase: string, reason?: string) {
         <Column header="Pod Status" style="min-width: 12rem">
           <template #body="{ data }">
             <div class="flex items-center gap-2 text-xs font-mono">
-              <span class="px-2 py-0.5 rounded bg-teal-500/10 text-teal-300 border border-teal-500/30">
+              <span
+                class="px-2 py-0.5 rounded bg-teal-500/10 text-teal-300 border border-teal-500/30"
+              >
                 Ready: {{ data.number_ready }}/{{ data.desired_number_scheduled }}
               </span>
               <span class="text-slate-400 text-[11px]">
@@ -863,14 +942,19 @@ function getPhaseColor(phase: string, reason?: string) {
           <div class="py-12 text-center text-slate-400">
             <i class="pi pi-clone text-3xl mb-2 text-slate-500"></i>
             <h3 class="font-semibold text-slate-200">No DaemonSets Found</h3>
-            <p class="text-xs text-slate-500 mt-1">There are no DaemonSets in {{ selectedNamespace }}.</p>
+            <p class="text-xs text-slate-500 mt-1">
+              There are no DaemonSets in {{ selectedNamespace }}.
+            </p>
           </div>
         </template>
       </DataTable>
     </div>
 
     <!-- TAB 4: Pods Deep-Dive -->
-    <div v-if="activeTab === 'pods'" class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl bg-white dark:bg-slate-900/90">
+    <div
+      v-if="activeTab === 'pods'"
+      class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl bg-white dark:bg-slate-900/90"
+    >
       <DataTable
         :value="filteredPods"
         :loading="isLoading"
@@ -881,11 +965,15 @@ function getPhaseColor(phase: string, reason?: string) {
         <Column field="name" header="Pod Name" sortable style="min-width: 16rem">
           <template #body="{ data }">
             <div class="flex items-center gap-2.5">
-              <div class="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0">
+              <div
+                class="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0"
+              >
                 <i class="pi pi-box text-xs"></i>
               </div>
               <div>
-                <span class="font-bold text-slate-900 dark:text-slate-100 text-xs font-mono">{{ data.name }}</span>
+                <span class="font-bold text-slate-900 dark:text-slate-100 text-xs font-mono">{{
+                  data.name
+                }}</span>
                 <div class="text-[11px] text-slate-400 font-mono">{{ data.namespace }}</div>
               </div>
             </div>
@@ -917,7 +1005,11 @@ function getPhaseColor(phase: string, reason?: string) {
           <template #body="{ data }">
             <span
               class="px-2 py-0.5 rounded text-xs font-mono font-bold"
-              :class="data.restarts > 0 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'text-slate-400'"
+              :class="
+                data.restarts > 0
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                  : 'text-slate-400'
+              "
             >
               {{ data.restarts }}
             </span>
@@ -941,8 +1033,13 @@ function getPhaseColor(phase: string, reason?: string) {
               <!-- CPU Meter -->
               <div>
                 <div class="flex items-center justify-between text-[10px] font-mono mb-0.5">
-                  <span class="text-slate-400">CPU: <b class="text-slate-200">{{ podMetrics[data.name]?.cpu_usage }}</b></span>
-                  <span class="font-bold" :class="getUsageColor(podMetrics[data.name]?.cpu_percent || 0)">
+                  <span class="text-slate-400"
+                    >CPU: <b class="text-slate-200">{{ podMetrics[data.name]?.cpu_usage }}</b></span
+                  >
+                  <span
+                    class="font-bold"
+                    :class="getUsageColor(podMetrics[data.name]?.cpu_percent || 0)"
+                  >
                     {{ Math.round(podMetrics[data.name]?.cpu_percent || 0) }}%
                   </span>
                 </div>
@@ -958,8 +1055,14 @@ function getPhaseColor(phase: string, reason?: string) {
               <!-- Memory Meter -->
               <div>
                 <div class="flex items-center justify-between text-[10px] font-mono mb-0.5">
-                  <span class="text-slate-400">Mem: <b class="text-slate-200">{{ podMetrics[data.name]?.memory_usage }}</b></span>
-                  <span class="font-bold" :class="getUsageColor(podMetrics[data.name]?.memory_percent || 0)">
+                  <span class="text-slate-400"
+                    >Mem:
+                    <b class="text-slate-200">{{ podMetrics[data.name]?.memory_usage }}</b></span
+                  >
+                  <span
+                    class="font-bold"
+                    :class="getUsageColor(podMetrics[data.name]?.memory_percent || 0)"
+                  >
                     {{ Math.round(podMetrics[data.name]?.memory_percent || 0) }}%
                   </span>
                 </div>
@@ -967,14 +1070,14 @@ function getPhaseColor(phase: string, reason?: string) {
                   <div
                     class="h-full rounded-full transition-all duration-500"
                     :class="getUsageBarColor(podMetrics[data.name]?.memory_percent || 0)"
-                    :style="{ width: `${Math.min(100, podMetrics[data.name]?.memory_percent || 10)}%` }"
+                    :style="{
+                      width: `${Math.min(100, podMetrics[data.name]?.memory_percent || 10)}%`
+                    }"
                   ></div>
                 </div>
               </div>
             </div>
-            <div v-else class="text-[11px] font-mono text-slate-500 italic">
-              Telemetry sync...
-            </div>
+            <div v-else class="text-[11px] font-mono text-slate-500 italic">Telemetry sync...</div>
           </template>
         </Column>
 
@@ -996,7 +1099,11 @@ function getPhaseColor(phase: string, reason?: string) {
                 size="small"
                 class="btn-emerald text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 :disabled="!canMutate"
-                :title="!canMutate ? 'Read-only: terminal shell restricted' : 'Open interactive in-browser shell'"
+                :title="
+                  !canMutate
+                    ? 'Read-only: terminal shell restricted'
+                    : 'Open interactive in-browser shell'
+                "
                 @click="openTerminalForPod(data)"
               />
 
@@ -1027,7 +1134,11 @@ function getPhaseColor(phase: string, reason?: string) {
                 class="btn-rose text-xs px-2 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 :loading="isActionLoading"
                 :disabled="!canMutate"
-                :title="!canMutate ? 'Read-only: cannot delete or redeploy pod' : 'Redeploy / Delete Pod (triggers restart)'"
+                :title="
+                  !canMutate
+                    ? 'Read-only: cannot delete or redeploy pod'
+                    : 'Redeploy / Delete Pod (triggers restart)'
+                "
                 @click="deletePodConfirm(data)"
               />
             </div>
@@ -1038,7 +1149,9 @@ function getPhaseColor(phase: string, reason?: string) {
           <div class="py-12 text-center text-slate-400">
             <i class="pi pi-box text-3xl mb-2 text-slate-500"></i>
             <h3 class="font-semibold text-slate-200">No Pods Found</h3>
-            <p class="text-xs text-slate-500 mt-1">There are no pods matching filter in {{ selectedNamespace }}.</p>
+            <p class="text-xs text-slate-500 mt-1">
+              There are no pods matching filter in {{ selectedNamespace }}.
+            </p>
           </div>
         </template>
       </DataTable>
@@ -1059,6 +1172,14 @@ function getPhaseColor(phase: string, reason?: string) {
       :deployment-name="selectedDeploymentName"
       :namespace="selectedNamespace"
       @saved="k8sStore.fetchDeployments()"
+    />
+
+    <!-- Deployment Rollback & Revision History Modal -->
+    <DeploymentRollbackDialog
+      v-model:visible="isRollbackOpen"
+      :deployment-name="selectedDeploymentName"
+      :namespace="selectedNamespace"
+      @rolled-back="k8sStore.fetchDeployments()"
     />
 
     <!-- Interactive Web Terminal Modal -->
@@ -1085,7 +1206,13 @@ function getPhaseColor(phase: string, reason?: string) {
   animation: fadeIn 0.3s ease;
 }
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

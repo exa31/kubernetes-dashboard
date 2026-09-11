@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"golang/pkg/errors"
 	"golang/pkg/realtime"
 
+	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -546,6 +548,256 @@ func (s *K8sService) RolloutRestartDeployment(ctx context.Context, namespace, na
 		Deployment: name,
 		Namespace:  namespace,
 		RestartAt:  restartTime,
+	}, nil
+}
+
+// GetDeploymentHistory returns the rollout revision history of a deployment.
+func (s *K8sService) GetDeploymentHistory(ctx context.Context, namespace, name string) ([]DeploymentRevisionDTO, error) {
+	if namespace == "" {
+		namespace = "default"
+	}
+
+	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
+		// Mock history for simulation / demo mode
+		now := time.Now()
+		return []DeploymentRevisionDTO{
+			{
+				Revision:    3,
+				ReplicaSet:  fmt.Sprintf("%s-7df54cf75c", name),
+				Images:      []string{"ghcr.io/eka-dev/chat-app-backend:v1.2.0"},
+				ChangeCause: "Update container image to v1.2.0",
+				Replicas:    2,
+				CreatedAt:   now.Add(-2 * time.Hour),
+				Age:         formatAge(now.Add(-2 * time.Hour)),
+				IsCurrent:   true,
+			},
+			{
+				Revision:    2,
+				ReplicaSet:  fmt.Sprintf("%s-5c8bd94f86", name),
+				Images:      []string{"ghcr.io/eka-dev/chat-app-backend:v1.1.0"},
+				ChangeCause: "Bump backend version to v1.1.0",
+				Replicas:    0,
+				CreatedAt:   now.Add(-24 * time.Hour),
+				Age:         formatAge(now.Add(-24 * time.Hour)),
+				IsCurrent:   false,
+			},
+			{
+				Revision:    1,
+				ReplicaSet:  fmt.Sprintf("%s-68489cfbc6", name),
+				Images:      []string{"ghcr.io/eka-dev/chat-app-backend:v1.0.0"},
+				ChangeCause: "Initial deployment release",
+				Replicas:    0,
+				CreatedAt:   now.Add(-7 * 24 * time.Hour),
+				Age:         formatAge(now.Add(-7 * 24 * time.Hour)),
+				IsCurrent:   false,
+			},
+		}, nil
+	}
+
+	dep, err := s.clientMgr.Clientset.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil, errors.NotFound(fmt.Sprintf("Deployment '%s' not found", name))
+		}
+		return nil, errors.InternalError("Failed to get deployment", err)
+	}
+
+	rsList, err := s.clientMgr.Clientset.AppsV1().ReplicaSets(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.InternalError("Failed to list replicasets", err)
+	}
+
+	currentRevisionStr := ""
+	if dep.Annotations != nil {
+		currentRevisionStr = dep.Annotations["deployment.kubernetes.io/revision"]
+	}
+
+	var revisions []DeploymentRevisionDTO
+	for _, rs := range rsList.Items {
+		isOwned := false
+		for _, ref := range rs.OwnerReferences {
+			if ref.Kind == "Deployment" && ref.Name == dep.Name && (dep.UID == "" || ref.UID == dep.UID) {
+				isOwned = true
+				break
+			}
+		}
+		if !isOwned {
+			continue
+		}
+
+		revStr := ""
+		if rs.Annotations != nil {
+			revStr = rs.Annotations["deployment.kubernetes.io/revision"]
+		}
+		revNum, _ := strconv.ParseInt(revStr, 10, 64)
+		if revNum <= 0 {
+			continue
+		}
+
+		changeCause := ""
+		if rs.Annotations != nil {
+			changeCause = rs.Annotations["kubernetes.io/change-cause"]
+		}
+		if changeCause == "" {
+			changeCause = "<none>"
+		}
+
+		var images []string
+		for _, c := range rs.Spec.Template.Spec.Containers {
+			images = append(images, c.Image)
+		}
+
+		revisions = append(revisions, DeploymentRevisionDTO{
+			Revision:    revNum,
+			ReplicaSet:  rs.Name,
+			Images:      images,
+			ChangeCause: changeCause,
+			Replicas:    derefInt32(rs.Spec.Replicas),
+			CreatedAt:   rs.CreationTimestamp.Time,
+			Age:         formatAge(rs.CreationTimestamp.Time),
+			IsCurrent:   revStr != "" && revStr == currentRevisionStr,
+		})
+	}
+
+	// Sort revisions descending (newest revision first)
+	sort.Slice(revisions, func(i, j int) bool {
+		return revisions[i].Revision > revisions[j].Revision
+	})
+
+	return revisions, nil
+}
+
+// RollbackDeployment rolls back a deployment to a target revision or the immediate previous revision if toRevision is 0.
+func (s *K8sService) RollbackDeployment(ctx context.Context, namespace, name string, toRevision int64) (*RollbackDeploymentResponse, error) {
+	if namespace == "" {
+		namespace = "default"
+	}
+
+	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
+		targetRev := toRevision
+		if targetRev <= 0 {
+			targetRev = 2 // simulate rolling back from 3 to 2 in demo mode
+		}
+		return &RollbackDeploymentResponse{
+			Message:    fmt.Sprintf("Simulated rollback of deployment '%s' to revision %d triggered successfully", name, targetRev),
+			Deployment: name,
+			Namespace:  namespace,
+			ToRevision: targetRev,
+		}, nil
+	}
+
+	dep, err := s.clientMgr.Clientset.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil, errors.NotFound(fmt.Sprintf("Deployment '%s' not found", name))
+		}
+		return nil, errors.InternalError("Failed to get deployment", err)
+	}
+
+	rsList, err := s.clientMgr.Clientset.AppsV1().ReplicaSets(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.InternalError("Failed to list replicasets", err)
+	}
+
+	currentRevisionStr := ""
+	if dep.Annotations != nil {
+		currentRevisionStr = dep.Annotations["deployment.kubernetes.io/revision"]
+	}
+	currentRev, _ := strconv.ParseInt(currentRevisionStr, 10, 64)
+
+	type rsRev struct {
+		rs       appsv1.ReplicaSet
+		revision int64
+	}
+	var ownedRS []rsRev
+
+	for _, rs := range rsList.Items {
+		isOwned := false
+		for _, ref := range rs.OwnerReferences {
+			if ref.Kind == "Deployment" && ref.Name == dep.Name && (dep.UID == "" || ref.UID == dep.UID) {
+				isOwned = true
+				break
+			}
+		}
+		if !isOwned {
+			continue
+		}
+
+		revStr := ""
+		if rs.Annotations != nil {
+			revStr = rs.Annotations["deployment.kubernetes.io/revision"]
+		}
+		rNum, _ := strconv.ParseInt(revStr, 10, 64)
+		if rNum > 0 {
+			ownedRS = append(ownedRS, rsRev{rs: rs, revision: rNum})
+		}
+	}
+
+	if len(ownedRS) == 0 {
+		return nil, errors.BadRequest(fmt.Sprintf("No revision history found for deployment '%s'", name))
+	}
+
+	// Sort revisions descending
+	sort.Slice(ownedRS, func(i, j int) bool {
+		return ownedRS[i].revision > ownedRS[j].revision
+	})
+
+	var targetRS *appsv1.ReplicaSet
+	var targetRevision int64
+
+	if toRevision > 0 {
+		if toRevision == currentRev {
+			return nil, errors.BadRequest(fmt.Sprintf("Deployment '%s' is already at revision %d", name, toRevision))
+		}
+		for i := range ownedRS {
+			if ownedRS[i].revision == toRevision {
+				targetRS = &ownedRS[i].rs
+				targetRevision = toRevision
+				break
+			}
+		}
+		if targetRS == nil {
+			return nil, errors.NotFound(fmt.Sprintf("Revision %d not found for deployment '%s'", toRevision, name))
+		}
+	} else {
+		// Rollback to immediate previous revision (highest revision < currentRev, or 2nd newest if currentRev is unknown)
+		for i := range ownedRS {
+			if currentRev > 0 {
+				if ownedRS[i].revision < currentRev {
+					targetRS = &ownedRS[i].rs
+					targetRevision = ownedRS[i].revision
+					break
+					}
+			} else if i > 0 {
+				targetRS = &ownedRS[i].rs
+				targetRevision = ownedRS[i].revision
+				break
+			}
+		}
+		if targetRS == nil {
+			return nil, errors.BadRequest("No previous revision available to rollback to")
+		}
+	}
+
+	// Apply target pod template to deployment
+	dep.Spec.Template = targetRS.Spec.Template
+	if dep.Annotations == nil {
+		dep.Annotations = make(map[string]string)
+	}
+	dep.Annotations["kubernetes.io/change-cause"] = fmt.Sprintf("rollback to revision %d", targetRevision)
+
+	_, err = s.clientMgr.Clientset.AppsV1().Deployments(namespace).Update(ctx, dep, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, errors.InternalError("Failed to rollback deployment", err)
+	}
+
+	s.BroadcastK8sChange("deployment", "rollback", namespace, name)
+
+	return &RollbackDeploymentResponse{
+		Message:    fmt.Sprintf("Deployment '%s' successfully rolled back to revision %d", name, targetRevision),
+		Deployment: name,
+		Namespace:  namespace,
+		ToRevision: targetRevision,
 	}, nil
 }
 

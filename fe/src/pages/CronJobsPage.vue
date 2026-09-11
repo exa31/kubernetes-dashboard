@@ -6,5 +6,4 @@ import { CronJobList } from '@/features/k8s'
   <CronJobList />
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

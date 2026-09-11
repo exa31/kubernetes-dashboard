@@ -16,8 +16,8 @@ const props = withDefaults(
     readOnly?: boolean
   }>(),
   {
-    readOnly: false,
-  },
+    readOnly: false
+  }
 )
 
 const emit = defineEmits<{
@@ -28,7 +28,7 @@ const emit = defineEmits<{
 const authStore = useAuthStore()
 const k8sStore = useK8sStore()
 const isEffectiveReadOnly = computed(
-  () => props.readOnly || !authStore.canMutateNamespace(props.detail.namespace),
+  () => props.readOnly || !authStore.canMutateNamespace(props.detail.namespace)
 )
 
 // State
@@ -90,7 +90,7 @@ function syncFromDotEnv() {
       newRows.push({
         id: `row-${++rowCounter}`,
         key: k,
-        value: v,
+        value: v
       })
     }
   }
@@ -105,7 +105,7 @@ function initFromData() {
     parsedRows.push({
       id: `row-${++rowCounter}`,
       key,
-      value: String(value ?? ''),
+      value: String(value ?? '')
     })
   }
   // Sort alphabetically by key
@@ -119,7 +119,7 @@ watch(
   () => {
     initFromData()
   },
-  { immediate: true },
+  { immediate: true }
 )
 
 const onDotEnvChange = () => {
@@ -139,7 +139,9 @@ const onTabChange = (mode: EditorMode) => {
 const filteredRows = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   if (!q) return rows.value
-  return rows.value.filter((r) => r.key.toLowerCase().includes(q) || r.value.toLowerCase().includes(q))
+  return rows.value.filter(
+    (r) => r.key.toLowerCase().includes(q) || r.value.toLowerCase().includes(q)
+  )
 })
 
 // Add new row
@@ -148,7 +150,7 @@ const addRow = () => {
     id: `row-${++rowCounter}`,
     key: '',
     value: '',
-    isNew: true,
+    isNew: true
   }
   rows.value.unshift(newRow)
   syncToDotEnv()
@@ -224,7 +226,7 @@ const onFileSelected = (e: Event) => {
     syncFromDotEnv()
     bannerMessage.value = {
       text: `Imported variables from ${file.name}`,
-      type: 'success',
+      type: 'success'
     }
   }
   reader.readAsText(file)
@@ -232,7 +234,7 @@ const onFileSelected = (e: Event) => {
 
 // Connected deployments
 const connectedDeployments = computed(() => {
-  const {name} = props.detail
+  const { name } = props.detail
   return k8sStore.deployments.filter((d) => {
     if (props.resourceType === 'secret') {
       return d.env_secrets.includes(name)
@@ -249,20 +251,20 @@ watch(
       selectedDeploymentToRestart.value = deps[0].name
     }
   },
-  { immediate: true },
+  { immediate: true }
 )
 
 // YAML Manifest Preview
 const yamlManifest = computed(() => {
   const kind = props.resourceType === 'secret' ? 'Secret' : 'ConfigMap'
-  const {name} = props.detail
-  const {namespace} = props.detail
+  const { name } = props.detail
+  const { namespace } = props.detail
   const dataMap = rows.value.reduce(
     (acc, r) => {
       if (r.key.trim()) acc[r.key.trim()] = r.value
       return acc
     },
-    {} as Record<string, string>,
+    {} as Record<string, string>
   )
 
   let out = `apiVersion: v1\nkind: ${kind}\nmetadata:\n  name: ${name}\n  namespace: ${namespace}\n`
@@ -272,7 +274,9 @@ const yamlManifest = computed(() => {
     out += `data:\n`
   }
   for (const [k, v] of Object.entries(dataMap)) {
-    const formatted = v.includes('\n') ? `|\n    ${v.replace(/\n/g, '\n    ')}` : `"${v.replace(/"/g, '\\"')}"`
+    const formatted = v.includes('\n')
+      ? `|\n    ${v.replace(/\n/g, '\n    ')}`
+      : `"${v.replace(/"/g, '\\"')}"`
     out += `  ${k}: ${formatted}\n`
   }
   return out
@@ -304,7 +308,7 @@ const saveChanges = async (restartDeploymentName?: string) => {
         type: props.detail.type || 'Opaque',
         data: payloadData,
         labels: props.detail.labels,
-        annotations: props.detail.annotations,
+        annotations: props.detail.annotations
       })
     } else {
       await k8sStore.saveConfigMap({
@@ -312,7 +316,7 @@ const saveChanges = async (restartDeploymentName?: string) => {
         namespace: props.detail.namespace,
         data: payloadData,
         labels: props.detail.labels,
-        annotations: props.detail.annotations,
+        annotations: props.detail.annotations
       })
     }
 
@@ -337,7 +341,7 @@ const saveChanges = async (restartDeploymentName?: string) => {
     }
     bannerMessage.value = {
       text: errText,
-      type: 'error',
+      type: 'error'
     }
   } finally {
     isSaving.value = false
@@ -346,7 +350,9 @@ const saveChanges = async (restartDeploymentName?: string) => {
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
+  <div
+    class="flex flex-col h-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden"
+  >
     <!-- Hidden file input for .env import -->
     <input
       ref="fileInput"
@@ -357,11 +363,18 @@ const saveChanges = async (restartDeploymentName?: string) => {
     />
 
     <!-- Header Section -->
-    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 bg-slate-50/70 dark:bg-slate-950/40">
+    <div
+      class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 bg-slate-50/70 dark:bg-slate-950/40"
+    >
       <div class="flex items-center gap-3 min-w-0">
         <div
-class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white shadow-sm shrink-0"
-             :class="resourceType === 'secret' ? 'bg-gradient-to-tr from-amber-500 to-orange-500' : 'bg-gradient-to-tr from-sky-500 to-blue-600'">
+          class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white shadow-sm shrink-0"
+          :class="
+            resourceType === 'secret'
+              ? 'bg-gradient-to-tr from-amber-500 to-orange-500'
+              : 'bg-gradient-to-tr from-sky-500 to-blue-600'
+          "
+        >
           <i :class="resourceType === 'secret' ? 'pi pi-lock text-lg' : 'pi pi-file text-lg'"></i>
         </div>
         <div class="min-w-0">
@@ -371,9 +384,13 @@ class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-whit
             </h2>
             <span
               class="text-xs px-2 py-0.5 rounded-full font-medium"
-              :class="resourceType === 'secret' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' : 'bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300'"
+              :class="
+                resourceType === 'secret'
+                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+                  : 'bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300'
+              "
             >
-              {{ resourceType === 'secret' ? (detail.type || 'Secret') : 'ConfigMap' }}
+              {{ resourceType === 'secret' ? detail.type || 'Secret' : 'ConfigMap' }}
             </span>
             <span
               v-if="isEffectiveReadOnly"
@@ -384,7 +401,12 @@ class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-whit
             </span>
           </div>
           <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2">
-            <span>Namespace: <strong class="text-slate-700 dark:text-slate-300">{{ detail.namespace }}</strong></span>
+            <span
+              >Namespace:
+              <strong class="text-slate-700 dark:text-slate-300">{{
+                detail.namespace
+              }}</strong></span
+            >
             <span>•</span>
             <span>{{ rows.length }} variables</span>
           </div>
@@ -418,7 +440,7 @@ class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-whit
           outlined
           @click="copyToClipboard(rawDotEnv, 'all')"
         />
-        
+
         <div class="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
 
         <Button
@@ -458,26 +480,41 @@ class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-whit
       v-if="bannerMessage"
       class="px-6 py-2.5 text-sm flex items-center justify-between border-b transition-all"
       :class="{
-        'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800/60': bannerMessage.type === 'success',
-        'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border-rose-200 dark:border-rose-800/60': bannerMessage.type === 'error',
-        'bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800/60': bannerMessage.type === 'info',
+        'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800/60':
+          bannerMessage.type === 'success',
+        'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border-rose-200 dark:border-rose-800/60':
+          bannerMessage.type === 'error',
+        'bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800/60':
+          bannerMessage.type === 'info'
       }"
     >
       <div class="flex items-center gap-2">
-        <i :class="bannerMessage.type === 'success' ? 'pi pi-check-circle' : 'pi pi-exclamation-circle'"></i>
+        <i
+          :class="
+            bannerMessage.type === 'success' ? 'pi pi-check-circle' : 'pi pi-exclamation-circle'
+          "
+        ></i>
         <span>{{ bannerMessage.text }}</span>
       </div>
       <button class="text-xs hover:opacity-75" @click="bannerMessage = null">Dismiss</button>
     </div>
 
     <!-- Mode Selector & Filter Toolbar -->
-    <div class="px-6 py-3 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900">
+    <div
+      class="px-6 py-3 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900"
+    >
       <!-- Tabs -->
-      <div class="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-semibold">
+      <div
+        class="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-semibold"
+      >
         <button
           type="button"
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all cursor-pointer"
-          :class="activeMode === 'table' ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 font-bold shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'"
+          :class="
+            activeMode === 'table'
+              ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 font-bold shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+          "
           @click="onTabChange('table')"
         >
           <i class="pi pi-table"></i>
@@ -486,7 +523,11 @@ class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-whit
         <button
           type="button"
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all cursor-pointer"
-          :class="activeMode === 'dotenv' ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 font-bold shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'"
+          :class="
+            activeMode === 'dotenv'
+              ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 font-bold shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+          "
           @click="onTabChange('dotenv')"
         >
           <i class="pi pi-code"></i>
@@ -495,7 +536,11 @@ class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-whit
         <button
           type="button"
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all cursor-pointer"
-          :class="activeMode === 'yaml' ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 font-bold shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'"
+          :class="
+            activeMode === 'yaml'
+              ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 font-bold shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+          "
           @click="onTabChange('yaml')"
         >
           <i class="pi pi-align-left"></i>
@@ -542,7 +587,9 @@ class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-whit
       <div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
         <table class="w-full text-left text-sm border-collapse">
           <thead>
-            <tr class="bg-slate-50 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <tr
+              class="bg-slate-50 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+            >
               <th class="py-3 px-4 w-12 text-center">#</th>
               <th class="py-3 px-4 w-2/5">Key / Variable Name</th>
               <th class="py-3 px-4">Value (Plaintext)</th>
@@ -592,7 +639,11 @@ class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-whit
                       :title="isRevealed(row.key) ? 'Mask value' : 'Show value'"
                       @click="toggleReveal(row.key)"
                     >
-                      <i :class="isRevealed(row.key) ? 'pi pi-eye-slash text-xs' : 'pi pi-eye text-xs'"></i>
+                      <i
+                        :class="
+                          isRevealed(row.key) ? 'pi pi-eye-slash text-xs' : 'pi pi-eye text-xs'
+                        "
+                      ></i>
                     </button>
                     <button
                       type="button"
@@ -600,7 +651,13 @@ class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-whit
                       :title="copySuccessKey === row.id ? 'Copied!' : 'Copy value'"
                       @click="copyToClipboard(row.value, row.id)"
                     >
-                      <i :class="copySuccessKey === row.id ? 'pi pi-check text-xs text-emerald-500' : 'pi pi-copy text-xs'"></i>
+                      <i
+                        :class="
+                          copySuccessKey === row.id
+                            ? 'pi pi-check text-xs text-emerald-500'
+                            : 'pi pi-copy text-xs'
+                        "
+                      ></i>
                     </button>
                   </div>
                 </div>
@@ -657,11 +714,17 @@ class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-whit
     <div v-else-if="activeMode === 'dotenv'" class="flex-1 flex flex-col p-6 overflow-hidden">
       <div class="mb-3 flex items-center justify-between text-xs text-slate-500">
         <span>
-          {{ isEffectiveReadOnly ? 'Environment variables view in standard syntax.' : 'Bulk edit environment variables directly in standard .env syntax. Edits automatically synchronize with the table view.' }}
+          {{
+            isEffectiveReadOnly
+              ? 'Environment variables view in standard syntax.'
+              : 'Bulk edit environment variables directly in standard .env syntax. Edits automatically synchronize with the table view.'
+          }}
         </span>
         <span class="font-mono">{{ rawDotEnv.split('\n').filter(Boolean).length }} lines</span>
       </div>
-      <div class="flex-1 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden relative shadow-inner">
+      <div
+        class="flex-1 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden relative shadow-inner"
+      >
         <textarea
           v-model="rawDotEnv"
           :readonly="isEffectiveReadOnly"
@@ -677,7 +740,8 @@ class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-whit
     <div v-else class="flex-1 flex flex-col p-6 overflow-hidden">
       <div class="mb-3 flex items-center justify-between text-xs text-slate-500">
         <span>
-          Live Kubernetes manifest preview with <code class="font-bold text-sky-500">stringData</code>.
+          Live Kubernetes manifest preview with
+          <code class="font-bold text-sky-500">stringData</code>.
         </span>
         <Button
           label="Copy YAML"
@@ -687,12 +751,13 @@ class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-whit
           @click="copyToClipboard(yamlManifest, 'yaml')"
         />
       </div>
-      <div class="flex-1 rounded-lg border border-slate-200 dark:border-slate-800 overflow-auto bg-slate-950 p-4">
+      <div
+        class="flex-1 rounded-lg border border-slate-200 dark:border-slate-800 overflow-auto bg-slate-950 p-4"
+      >
         <pre class="font-mono text-xs text-sky-300 leading-relaxed">{{ yamlManifest }}</pre>
       </div>
     </div>
   </div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

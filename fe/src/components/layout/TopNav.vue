@@ -50,7 +50,7 @@ const routeTitles: Record<string, string> = {
   '/services': 'Services',
   '/ingresses': 'Ingresses',
   '/storage': 'Storage & Volumes',
-  '/users': 'Access & Users',
+  '/users': 'Access & Users'
 }
 
 const breadcrumbs = computed(() => {
@@ -68,7 +68,9 @@ const handleLogout = async () => {
 </script>
 
 <template>
-  <header class="h-16 flex items-center justify-between px-3 sm:px-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 z-10 sticky top-0 min-w-0">
+  <header
+    class="h-16 flex items-center justify-between px-3 sm:px-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 z-10 sticky top-0 min-w-0"
+  >
     <div class="flex items-center gap-2 sm:gap-4 min-w-0 shrink">
       <button
         class="p-2 -ml-1 sm:-ml-2 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-slate-50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
@@ -105,17 +107,36 @@ const handleLogout = async () => {
       <!-- Realtime Live Sync status pill -->
       <div
         class="hidden sm:flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium border font-mono transition-colors shrink-0"
-        :class="isConnected ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'"
-        :title="isConnected ? 'Live Real-Time Sync Connected (SSE) - Cluster 103.150.226.122' : 'Connecting to Live Sync...'"
+        :class="
+          isConnected
+            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+            : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'
+        "
+        :title="
+          isConnected
+            ? 'Live Real-Time Sync Connected (SSE) - Cluster 103.150.226.122'
+            : 'Connecting to Live Sync...'
+        "
       >
-        <span class="w-1.5 h-1.5 rounded-full" :class="isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'"></span>
+        <span
+          class="w-1.5 h-1.5 rounded-full"
+          :class="isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'"
+        ></span>
         <span class="hidden xl:inline">{{ isConnected ? 'Live Sync' : 'Connecting...' }}</span>
       </div>
 
       <!-- Cluster connection pill (Visible on extra-wide screens) -->
-      <div class="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 font-mono shrink-0 max-w-[220px]">
+      <div
+        class="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 font-mono shrink-0 max-w-[220px]"
+      >
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
-        <span class="truncate">{{ clusterInfo?.connected ? (clusterInfo?.endpoint ? 'Cluster: ' + clusterInfo.endpoint.replace('https://', '') : 'Cluster Connected') : 'Cluster Mode' }}</span>
+        <span class="truncate">{{
+          clusterInfo?.connected
+            ? clusterInfo?.endpoint
+              ? 'Cluster: ' + clusterInfo.endpoint.replace('https://', '')
+              : 'Cluster Connected'
+            : 'Cluster Mode'
+        }}</span>
       </div>
 
       <!-- Events / Alert Bell button -->
@@ -141,19 +162,28 @@ const handleLogout = async () => {
         :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
         @click="toggleTheme"
       >
-        <i :class="isDark ? 'pi pi-sun text-amber-400' : 'pi pi-moon text-sky-600'" class="text-sm sm:text-base"></i>
+        <i
+          :class="isDark ? 'pi pi-sun text-amber-400' : 'pi pi-moon text-sky-600'"
+          class="text-sm sm:text-base"
+        ></i>
       </button>
 
-      <div class="h-5 sm:h-6 w-px bg-slate-200 dark:bg-slate-700 mx-0.5 shrink-0 hidden sm:block"></div>
+      <div
+        class="h-5 sm:h-6 w-px bg-slate-200 dark:bg-slate-700 mx-0.5 shrink-0 hidden sm:block"
+      ></div>
 
       <!-- User Menu -->
       <div class="flex items-center gap-2 shrink-0">
-        <div class="w-8 h-8 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 flex items-center justify-center font-bold text-xs font-mono shrink-0 select-none">
+        <div
+          class="w-8 h-8 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 flex items-center justify-center font-bold text-xs font-mono shrink-0 select-none"
+        >
           {{ (user?.name || 'A').charAt(0).toUpperCase() }}
         </div>
 
         <div class="hidden xl:block text-right">
-          <div class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[130px]">
+          <div
+            class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[130px]"
+          >
             {{ user?.name || 'Kubernetes Admin' }}
           </div>
           <div class="text-[11px] text-slate-400 font-mono truncate max-w-[130px]">
@@ -179,5 +209,4 @@ const handleLogout = async () => {
   </header>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

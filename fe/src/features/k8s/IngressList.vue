@@ -36,7 +36,7 @@ const filteredIngresses = computed(() => {
       ing.name.toLowerCase().includes(q) ||
       ing.class_name.toLowerCase().includes(q) ||
       ing.hosts.some((h) => h.toLowerCase().includes(q)) ||
-      ing.rules.some((r) => r.service_name.toLowerCase().includes(q)),
+      ing.rules.some((r) => r.service_name.toLowerCase().includes(q))
   )
 })
 </script>
@@ -46,12 +46,17 @@ const filteredIngresses = computed(() => {
     <!-- Top toolbar -->
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
+        <h1
+          class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5"
+        >
           <i class="pi pi-globe text-cyan-500"></i>
           <span>Ingresses & Routes</span>
         </h1>
         <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">
-          Public hostnames, reverse proxy routing, and TLS certificates in <strong class="text-slate-700 dark:text-slate-300 font-mono">{{ selectedNamespace }}</strong>
+          Public hostnames, reverse proxy routing, and TLS certificates in
+          <strong class="text-slate-700 dark:text-slate-300 font-mono">{{
+            selectedNamespace
+          }}</strong>
         </p>
       </div>
 
@@ -78,7 +83,9 @@ const filteredIngresses = computed(() => {
     </div>
 
     <!-- PrimeVue DataTable for Ingresses -->
-    <div class="w-full rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden bg-white dark:bg-slate-950">
+    <div
+      class="w-full rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden bg-white dark:bg-slate-950"
+    >
       <DataTable
         :value="filteredIngresses"
         :loading="isLoading"
@@ -93,7 +100,9 @@ const filteredIngresses = computed(() => {
         <Column field="name" header="Ingress Name" sortable>
           <template #body="{ data }">
             <div class="flex items-center gap-3 py-1">
-              <div class="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-500 flex items-center justify-center font-bold shrink-0">
+              <div
+                class="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-500 flex items-center justify-center font-bold shrink-0"
+              >
                 <i class="pi pi-globe text-xs"></i>
               </div>
               <div>
@@ -101,7 +110,12 @@ const filteredIngresses = computed(() => {
                   {{ data.name }}
                 </div>
                 <div class="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
-                  <span>Class: <strong class="text-slate-600 dark:text-slate-300 font-mono">{{ data.class_name || 'default' }}</strong></span>
+                  <span
+                    >Class:
+                    <strong class="text-slate-600 dark:text-slate-300 font-mono">{{
+                      data.class_name || 'default'
+                    }}</strong></span
+                  >
                   <span>&bull;</span>
                   <span>Age: {{ data.age }}</span>
                 </div>
@@ -114,11 +128,7 @@ const filteredIngresses = computed(() => {
         <Column header="Hosts (Public URLs)">
           <template #body="{ data }">
             <div class="space-y-1">
-              <div
-                v-for="host in data.hosts"
-                :key="host"
-                class="flex items-center gap-1.5"
-              >
+              <div v-for="host in data.hosts" :key="host" class="flex items-center gap-1.5">
                 <a
                   :href="`https://${host}`"
                   target="_blank"
@@ -129,7 +139,9 @@ const filteredIngresses = computed(() => {
                   <i class="pi pi-external-link text-[10px]"></i>
                 </a>
               </div>
-              <span v-if="data.hosts.length === 0" class="text-xs text-slate-400 italic">* (All hosts)</span>
+              <span v-if="data.hosts.length === 0" class="text-xs text-slate-400 italic"
+                >* (All hosts)</span
+              >
             </div>
           </template>
         </Column>
@@ -153,13 +165,19 @@ const filteredIngresses = computed(() => {
                 :key="idx"
                 class="text-[11px] font-mono flex items-center gap-1 text-slate-700 dark:text-slate-300"
               >
-                <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                <span
+                  class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                >
                   {{ r.path || '/' }}
                 </span>
                 <span class="text-slate-400">&rarr;</span>
-                <span class="text-sky-600 dark:text-sky-400 font-semibold">{{ r.service_name }}:{{ r.service_port }}</span>
+                <span class="text-sky-600 dark:text-sky-400 font-semibold"
+                  >{{ r.service_name }}:{{ r.service_port }}</span
+                >
               </div>
-              <span v-if="data.rules.length === 0" class="text-xs text-slate-400 italic">No explicit path rules</span>
+              <span v-if="data.rules.length === 0" class="text-xs text-slate-400 italic"
+                >No explicit path rules</span
+              >
             </div>
           </template>
         </Column>
@@ -179,7 +197,12 @@ const filteredIngresses = computed(() => {
         </Column>
 
         <!-- Actions Column -->
-        <Column header="Actions" header-style="text-align: right" body-style="text-align: right" style="width: 100px">
+        <Column
+          header="Actions"
+          header-style="text-align: right"
+          body-style="text-align: right"
+          style="width: 100px"
+        >
           <template #body="{ data }">
             <Button
               label="YAML"
@@ -196,7 +219,9 @@ const filteredIngresses = computed(() => {
           <div class="py-16 text-center text-slate-400">
             <i class="pi pi-globe text-4xl mb-3 text-slate-300 dark:text-slate-700"></i>
             <h3 class="font-semibold text-slate-700 dark:text-slate-300">No Ingresses Found</h3>
-            <p class="text-xs text-slate-500 mt-1">There are no Ingress routes configured in namespace {{ selectedNamespace }}.</p>
+            <p class="text-xs text-slate-500 mt-1">
+              There are no Ingress routes configured in namespace {{ selectedNamespace }}.
+            </p>
           </div>
         </template>
       </DataTable>
@@ -213,5 +238,4 @@ const filteredIngresses = computed(() => {
   </div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

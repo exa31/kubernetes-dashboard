@@ -37,7 +37,7 @@ watch(
       await loadHistory()
     }
   },
-  { immediate: true },
+  { immediate: true }
 )
 
 async function loadHistory() {
@@ -85,9 +85,13 @@ function getStatusSeverity(status: string): 'success' | 'info' | 'danger' {
     @update:visible="(val) => emit('update:visible', val)"
   >
     <!-- Custom Header -->
-    <div class="px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+    <div
+      class="px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between"
+    >
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center font-bold text-base shrink-0">
+        <div
+          class="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center font-bold text-base shrink-0"
+        >
           <i class="pi pi-history"></i>
         </div>
         <div>
@@ -95,7 +99,10 @@ function getStatusSeverity(status: string): 'success' | 'info' | 'danger' {
             Execution History: {{ cronJobName }}
           </h2>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Batch Jobs instantiated in namespace <span class="font-mono text-slate-700 dark:text-slate-300 font-semibold">{{ namespace }}</span>
+            Batch Jobs instantiated in namespace
+            <span class="font-mono text-slate-700 dark:text-slate-300 font-semibold">{{
+              namespace
+            }}</span>
           </p>
         </div>
       </div>
@@ -111,7 +118,11 @@ function getStatusSeverity(status: string): 'success' | 'info' | 'danger' {
     <div class="p-6 space-y-4">
       <div class="flex items-center justify-between">
         <p class="text-xs text-slate-500 dark:text-slate-400">
-          Historical batch Jobs instantiated by <strong class="font-mono text-slate-800 dark:text-slate-200">{{ cronJobName }}</strong> in namespace <strong class="font-mono text-slate-800 dark:text-slate-200">{{ namespace }}</strong>.
+          Historical batch Jobs instantiated by
+          <strong class="font-mono text-slate-800 dark:text-slate-200">{{ cronJobName }}</strong> in
+          namespace
+          <strong class="font-mono text-slate-800 dark:text-slate-200">{{ namespace }}</strong
+          >.
         </p>
         <Button
           label="Refresh"
@@ -125,7 +136,9 @@ function getStatusSeverity(status: string): 'success' | 'info' | 'danger' {
         />
       </div>
 
-      <div class="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-950">
+      <div
+        class="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-950"
+      >
         <DataTable
           :value="jobs"
           :loading="isLoading"
@@ -138,7 +151,9 @@ function getStatusSeverity(status: string): 'success' | 'info' | 'danger' {
           <!-- Job Name -->
           <Column field="name" header="Job Name">
             <template #body="{ data }">
-              <div class="flex items-center gap-2 font-mono text-xs font-semibold text-slate-800 dark:text-slate-200">
+              <div
+                class="flex items-center gap-2 font-mono text-xs font-semibold text-slate-800 dark:text-slate-200"
+              >
                 <i class="pi pi-bolt text-amber-500"></i>
                 <span>{{ data.name }}</span>
               </div>
@@ -175,7 +190,12 @@ function getStatusSeverity(status: string): 'success' | 'info' | 'danger' {
           </Column>
 
           <!-- Action: View Logs -->
-          <Column header="Logs" header-style="text-align: right" body-style="text-align: right" style="width: 120px">
+          <Column
+            header="Logs"
+            header-style="text-align: right"
+            body-style="text-align: right"
+            style="width: 120px"
+          >
             <template #body="{ data }">
               <Button
                 label="Logs"
@@ -206,5 +226,4 @@ function getStatusSeverity(status: string): 'success' | 'info' | 'danger' {
   </Dialog>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>
