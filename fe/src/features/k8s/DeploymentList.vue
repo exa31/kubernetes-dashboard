@@ -9,8 +9,9 @@ import InputText from 'primevue/inputtext'
 import Tag from 'primevue/tag'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
+import { useK8sRealtime } from '@/composables'
 import DeploymentEditorDialog from '@/features/k8s/DeploymentEditorDialog.vue'
 import DeploymentRollbackDialog from '@/features/k8s/DeploymentRollbackDialog.vue'
 import PodLogsDialog from '@/features/k8s/PodLogsDialog.vue'
@@ -66,12 +67,75 @@ function getUsageBarColor(pct: number) {
   return 'bg-emerald-500'
 }
 
+const { isConnected } = useK8sRealtime()
+
+// Auto-refresh interval (in seconds: 5, 10, 30, or 0 = Off)
+const autoRefreshInterval = ref<number>(5)
+let pollingTimer: number | null = null
+
+function refreshActiveWorkload() {
+  switch (activeTab.value) {
+    case 'pods':
+      k8sStore.fetchPods()
+      k8sStore.fetchPodMetrics()
+      break
+    case 'deployments':
+      k8sStore.fetchDeployments()
+      break
+    case 'statefulsets':
+      k8sStore.fetchStatefulSets()
+      break
+    case 'daemonsets':
+      k8sStore.fetchDaemonSets()
+      break
+  }
+}
+
+function startPolling() {
+  stopPolling()
+  if (autoRefreshInterval.value <= 0) return
+  pollingTimer = window.setInterval(() => {
+    if (document.visibilityState === 'visible') {
+      refreshActiveWorkload()
+    }
+  }, autoRefreshInterval.value * 1000)
+}
+
+function stopPolling() {
+  if (pollingTimer !== null) {
+    window.clearInterval(pollingTimer)
+    pollingTimer = null
+  }
+}
+
+function setAutoRefresh(sec: number) {
+  autoRefreshInterval.value = sec
+  startPolling()
+}
+
+function onVisibilityChange() {
+  if (document.visibilityState === 'visible') {
+    refreshActiveWorkload()
+  }
+}
+
 onMounted(() => {
   fetchAllWorkloads()
+  startPolling()
+  document.addEventListener('visibilitychange', onVisibilityChange)
+})
+
+onBeforeUnmount(() => {
+  stopPolling()
+  document.removeEventListener('visibilitychange', onVisibilityChange)
 })
 
 watch(selectedNamespace, () => {
   fetchAllWorkloads()
+})
+
+watch(activeTab, () => {
+  refreshActiveWorkload()
 })
 
 function fetchAllWorkloads() {
@@ -528,8 +592,8 @@ function getPhaseColor(phase: string, reason?: string) {
       </button>
     </div>
 
-    <!-- Search Toolbar -->
-    <div class="flex items-center justify-between gap-4">
+    <!-- Search & Live Sync Toolbar -->
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
       <IconField icon-position="left" class="w-full sm:w-80">
         <InputIcon class="pi pi-search text-xs" />
         <InputText
@@ -538,6 +602,74 @@ function getPhaseColor(phase: string, reason?: string) {
           class="w-full text-xs rounded-xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 py-2 text-slate-800 dark:text-slate-200"
         />
       </IconField>
+
+      <!-- Live Sync & Auto-Refresh Controls -->
+      <div class="flex items-center gap-2 self-end sm:self-auto">
+        <!-- Live Status Pill -->
+        <div
+          class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs shadow-xs"
+        >
+          <span class="relative flex h-2 w-2">
+            <span
+              class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+              :class="
+                isConnected
+                  ? 'bg-emerald-400'
+                  : autoRefreshInterval > 0
+                    ? 'bg-sky-400'
+                    : 'bg-slate-400'
+              "
+            ></span>
+            <span
+              class="relative inline-flex rounded-full h-2 w-2"
+              :class="
+                isConnected
+                  ? 'bg-emerald-500'
+                  : autoRefreshInterval > 0
+                    ? 'bg-sky-500'
+                    : 'bg-slate-500'
+              "
+            ></span>
+          </span>
+          <span class="text-[11px] font-mono font-medium text-slate-600 dark:text-slate-300">
+            {{
+              isConnected ? 'Live Stream' : autoRefreshInterval > 0 ? 'Live Polling' : 'Sync Paused'
+            }}
+          </span>
+        </div>
+
+        <!-- Interval Selector -->
+        <div
+          class="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700/60 text-xs"
+        >
+          <button
+            type="button"
+            v-for="sec in [5, 10, 30, 0]"
+            :key="sec"
+            class="px-2 py-1 rounded-lg text-[11px] font-mono transition font-medium cursor-pointer"
+            :class="
+              autoRefreshInterval === sec
+                ? 'bg-white dark:bg-slate-700 text-sky-500 dark:text-sky-400 shadow-xs'
+                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            "
+            @click="setAutoRefresh(sec)"
+          >
+            {{ sec === 0 ? 'Off' : `${sec}s` }}
+          </button>
+        </div>
+
+        <!-- Manual Refresh Button -->
+        <Button
+          icon="pi pi-refresh"
+          size="small"
+          severity="secondary"
+          outlined
+          :loading="isLoading"
+          title="Force refresh now"
+          class="text-xs px-2.5 py-1.5 rounded-xl cursor-pointer"
+          @click="fetchAllWorkloads"
+        />
+      </div>
     </div>
 
     <!-- TAB 1: Deployments -->

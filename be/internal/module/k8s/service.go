@@ -1907,6 +1907,14 @@ func (s *K8sService) StartWatchers(ctx context.Context) {
 		return s.clientMgr.Clientset.AppsV1().Deployments(metav1.NamespaceAll).Watch(ctx, metav1.ListOptions{})
 	})
 
+	go s.watchResource(ctx, "statefulset", func() (watch.Interface, error) {
+		return s.clientMgr.Clientset.AppsV1().StatefulSets(metav1.NamespaceAll).Watch(ctx, metav1.ListOptions{})
+	})
+
+	go s.watchResource(ctx, "daemonset", func() (watch.Interface, error) {
+		return s.clientMgr.Clientset.AppsV1().DaemonSets(metav1.NamespaceAll).Watch(ctx, metav1.ListOptions{})
+	})
+
 	go s.watchResource(ctx, "pod", func() (watch.Interface, error) {
 		return s.clientMgr.Clientset.CoreV1().Pods(metav1.NamespaceAll).Watch(ctx, metav1.ListOptions{})
 	})
@@ -1925,6 +1933,18 @@ func (s *K8sService) StartWatchers(ctx context.Context) {
 
 	go s.watchResource(ctx, "service", func() (watch.Interface, error) {
 		return s.clientMgr.Clientset.CoreV1().Services(metav1.NamespaceAll).Watch(ctx, metav1.ListOptions{})
+	})
+
+	go s.watchResource(ctx, "ingress", func() (watch.Interface, error) {
+		return s.clientMgr.Clientset.NetworkingV1().Ingresses(metav1.NamespaceAll).Watch(ctx, metav1.ListOptions{})
+	})
+
+	go s.watchResource(ctx, "pvc", func() (watch.Interface, error) {
+		return s.clientMgr.Clientset.CoreV1().PersistentVolumeClaims(metav1.NamespaceAll).Watch(ctx, metav1.ListOptions{})
+	})
+
+	go s.watchResource(ctx, "namespace", func() (watch.Interface, error) {
+		return s.clientMgr.Clientset.CoreV1().Namespaces().Watch(ctx, metav1.ListOptions{})
 	})
 }
 
