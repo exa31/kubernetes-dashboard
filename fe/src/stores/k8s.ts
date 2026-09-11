@@ -8,11 +8,11 @@ import type {
   ConfigMapDetail,
   ConfigMapItem,
   CreateCronJobPayload,
+  CreateDeploymentPayload,
   CreateNamespacePayload,
   CronJobDetail,
   CronJobItem,
   DaemonSetItem,
-  CreateDeploymentPayload,
   DeploymentDetail,
   DeploymentItem,
   DeploymentRevision,
@@ -21,6 +21,7 @@ import type {
   HPAItem,
   IngressItem,
   JobItem,
+  KedaHTTPScaledObject,
   NamespaceItem,
   NodeItem,
   PodItem,
@@ -34,6 +35,7 @@ import type {
   RolloutRestartResponse,
   SaveConfigMapPayload,
   SaveHPAPayload,
+  SaveKedaHTTPPayload,
   SaveSecretPayload,
   SecretDetail,
   SecretItem,
@@ -41,7 +43,8 @@ import type {
   ServiceItem,
   StatefulSetItem,
   UpdateCronJobPayload,
-  UpdateDeploymentPayload
+  UpdateDeploymentPayload,
+  WorkloadAutoscaler
 } from '@/types'
 import { logger } from '@/utils'
 
@@ -60,6 +63,7 @@ export const useK8sStore = defineStore('k8s', () => {
   const ingresses = ref<IngressItem[]>([])
   const cronjobs = ref<CronJobItem[]>([])
   const hpas = ref<HPAItem[]>([])
+  const kedaHttpObjects = ref<KedaHTTPScaledObject[]>([])
   const events = ref<EventItem[]>([])
   const pvcs = ref<PVCItem[]>([])
   const pvs = ref<PVItem[]>([])
@@ -201,6 +205,15 @@ export const useK8sStore = defineStore('k8s', () => {
     }
   }
 
+  async function fetchKedaHTTPScaledObjects(ns: string = selectedNamespace.value) {
+    try {
+      kedaHttpObjects.value = await k8sApi.listKedaHTTPScaledObjects(ns)
+    } catch (err: unknown) {
+      logger.error('Failed to fetch KEDA HTTPScaledObjects', err)
+      kedaHttpObjects.value = []
+    }
+  }
+
   async function fetchAllResources(ns: string = selectedNamespace.value) {
     isLoading.value = true
     error.value = null
@@ -216,6 +229,7 @@ export const useK8sStore = defineStore('k8s', () => {
         fetchIngresses(ns),
         fetchCronJobs(ns),
         fetchHPAs(ns),
+        fetchKedaHTTPScaledObjects(ns),
         fetchClusterInfo(),
         fetchClusterOverview()
       ])
@@ -723,6 +737,49 @@ export const useK8sStore = defineStore('k8s', () => {
     }
   }
 
+  async function getWorkloadAutoscaler(
+    name: string,
+    kind: string = 'Deployment',
+    ns: string = selectedNamespace.value
+  ): Promise<WorkloadAutoscaler> {
+    return await k8sApi.getWorkloadAutoscaler(ns, kind, name)
+  }
+
+  async function getKedaHTTPForWorkload(
+    name: string,
+    kind: string = 'Deployment',
+    ns: string = selectedNamespace.value
+  ): Promise<KedaHTTPScaledObject | null> {
+    return await k8sApi.getKedaHTTPForWorkload(ns, kind, name)
+  }
+
+  async function saveKedaHTTPScaledObject(
+    payload: SaveKedaHTTPPayload
+  ): Promise<KedaHTTPScaledObject> {
+    isActionLoading.value = true
+    try {
+      const res = await k8sApi.saveKedaHTTPScaledObject(payload)
+      await fetchKedaHTTPScaledObjects(payload.namespace)
+      return res
+    } finally {
+      isActionLoading.value = false
+    }
+  }
+
+  async function deleteKedaHTTPScaledObject(
+    name: string,
+    ns: string = selectedNamespace.value
+  ): Promise<{ deleted: boolean }> {
+    isActionLoading.value = true
+    try {
+      const res = await k8sApi.deleteKedaHTTPScaledObject(ns, name)
+      await fetchKedaHTTPScaledObjects(ns)
+      return res
+    } finally {
+      isActionLoading.value = false
+    }
+  }
+
   return {
     clusterInfo,
     clusterOverview,
@@ -742,6 +799,7 @@ export const useK8sStore = defineStore('k8s', () => {
     ingresses,
     cronjobs,
     hpas,
+    kedaHttpObjects,
     events,
     pvcs,
     pvs,
@@ -768,10 +826,15 @@ export const useK8sStore = defineStore('k8s', () => {
     fetchIngresses,
     fetchCronJobs,
     fetchHPAs,
+    fetchKedaHTTPScaledObjects,
     getHPA,
     getHPAForWorkload,
     saveHPA,
     deleteHPA,
+    getWorkloadAutoscaler,
+    getKedaHTTPForWorkload,
+    saveKedaHTTPScaledObject,
+    deleteKedaHTTPScaledObject,
     fetchEvents,
     fetchPVCs,
     fetchPVs,

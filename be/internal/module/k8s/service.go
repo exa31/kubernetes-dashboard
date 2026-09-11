@@ -4004,5 +4004,285 @@ func (s *K8sService) DeleteHPA(ctx context.Context, namespace, name string) erro
 	return nil
 }
 
+var kedaHTTPGVR = schema.GroupVersionResource{
+	Group:    "http.keda.sh",
+	Version:  "v1alpha1",
+	Resource: "httpscaledobjects",
+}
+
+func unstructuredToKedaHTTPDTO(u *unstructured.Unstructured) KedaHTTPScaledObjectDTO {
+	name := u.GetName()
+	namespace := u.GetNamespace()
+	createdAt := u.GetCreationTimestamp().Time
+	age := formatAge(createdAt)
+
+	minReplicas, _, _ := unstructured.NestedInt64(u.Object, "spec", "replicas", "min")
+	maxReplicas, _, _ := unstructured.NestedInt64(u.Object, "spec", "replicas", "max")
+	scaledownPeriod, _, _ := unstructured.NestedInt64(u.Object, "spec", "scaledownPeriod")
+
+	targetKind, _, _ := unstructured.NestedString(u.Object, "spec", "scaleTargetRef", "kind")
+	if targetKind == "" {
+		targetKind = "Deployment"
+	}
+	targetName, _, _ := unstructured.NestedString(u.Object, "spec", "scaleTargetRef", "name")
+	targetService, _, _ := unstructured.NestedString(u.Object, "spec", "scaleTargetRef", "service")
+	targetPort, _, _ := unstructured.NestedInt64(u.Object, "spec", "scaleTargetRef", "port")
+
+	hosts, _, _ := unstructured.NestedStringSlice(u.Object, "spec", "hosts")
+
+	var concurrencyVal *int32
+	if val, found, _ := unstructured.NestedInt64(u.Object, "spec", "scalingMetric", "concurrency", "targetValue"); found {
+		v32 := int32(val)
+		concurrencyVal = &v32
+	}
+
+	var rateVal *int32
+	if val, found, _ := unstructured.NestedInt64(u.Object, "spec", "scalingMetric", "rate", "targetValue"); found {
+		v32 := int32(val)
+		rateVal = &v32
+	}
+
+	ready := false
+	if conditions, found, _ := unstructured.NestedSlice(u.Object, "status", "conditions"); found {
+		for _, c := range conditions {
+			if condMap, ok := c.(map[string]interface{}); ok {
+				if condMap["type"] == "Ready" && condMap["status"] == "True" {
+					ready = true
+					break
+				}
+			}
+		}
+	}
+
+	targetWorkload, _, _ := unstructured.NestedString(u.Object, "status", "targetWorkload")
+	if targetWorkload == "" {
+		targetWorkload = fmt.Sprintf("apps/v1/%s/%s", targetKind, targetName)
+	}
+
+	return KedaHTTPScaledObjectDTO{
+		Name:            name,
+		Namespace:       namespace,
+		TargetWorkload:  targetWorkload,
+		TargetKind:      targetKind,
+		TargetName:      targetName,
+		TargetService:   targetService,
+		TargetPort:      int32(targetPort),
+		MinReplicas:     int32(minReplicas),
+		MaxReplicas:     int32(maxReplicas),
+		Concurrency:     concurrencyVal,
+		RequestRate:     rateVal,
+		ScaledownPeriod: int32(scaledownPeriod),
+		Hosts:           hosts,
+		Ready:           ready,
+		Age:             age,
+		CreatedAt:       createdAt,
+	}
+}
+
+// ListKedaHTTPScaledObjects lists all HTTPScaledObjects in a namespace.
+func (s *K8sService) ListKedaHTTPScaledObjects(ctx context.Context, namespace string) ([]KedaHTTPScaledObjectDTO, error) {
+	if !s.clientMgr.Connected || s.clientMgr.DynamicClient == nil {
+		return []KedaHTTPScaledObjectDTO{}, nil
+	}
+
+	list, err := s.clientMgr.DynamicClient.Resource(kedaHTTPGVR).Namespace(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return []KedaHTTPScaledObjectDTO{}, nil
+		}
+		return nil, errors.InternalError("Failed to list HTTPScaledObjects", err)
+	}
+
+	res := make([]KedaHTTPScaledObjectDTO, 0, len(list.Items))
+	for _, item := range list.Items {
+		res = append(res, unstructuredToKedaHTTPDTO(&item))
+	}
+	return res, nil
+}
+
+// GetKedaHTTPForWorkload searches for an HTTPScaledObject targeting a specific workload.
+func (s *K8sService) GetKedaHTTPForWorkload(ctx context.Context, namespace, kind, name string) (*KedaHTTPScaledObjectDTO, error) {
+	if !s.clientMgr.Connected || s.clientMgr.DynamicClient == nil {
+		return nil, nil
+	}
+
+	list, err := s.clientMgr.DynamicClient.Resource(kedaHTTPGVR).Namespace(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, errors.InternalError("Failed to list HTTPScaledObjects", err)
+	}
+
+	for _, item := range list.Items {
+		targetName, _, _ := unstructured.NestedString(item.Object, "spec", "scaleTargetRef", "name")
+		if targetName == name {
+			dto := unstructuredToKedaHTTPDTO(&item)
+			return &dto, nil
+		}
+	}
+	return nil, nil
+}
+
+// GetWorkloadAutoscaler returns unified autoscaler info (KEDA HTTP or HPA) for a workload.
+func (s *K8sService) GetWorkloadAutoscaler(ctx context.Context, namespace, kind, name string) (*WorkloadAutoscalerDTO, error) {
+	kedaObj, err := s.GetKedaHTTPForWorkload(ctx, namespace, kind, name)
+	if err == nil && kedaObj != nil {
+		return &WorkloadAutoscalerDTO{
+			Type:     "keda-http",
+			KedaHTTP: kedaObj,
+		}, nil
+	}
+
+	hpaObj, err := s.GetHPAForWorkload(ctx, namespace, kind, name)
+	if err == nil && hpaObj != nil {
+		return &WorkloadAutoscalerDTO{
+			Type: "hpa",
+			HPA:  hpaObj,
+		}, nil
+	}
+
+	return &WorkloadAutoscalerDTO{
+		Type: "none",
+	}, nil
+}
+
+// SaveKedaHTTP creates or updates an HTTPScaledObject.
+func (s *K8sService) SaveKedaHTTP(ctx context.Context, req SaveKedaHTTPRequest) (*KedaHTTPScaledObjectDTO, error) {
+	if !s.clientMgr.Connected || s.clientMgr.DynamicClient == nil {
+		return nil, errors.InternalError("Kubernetes dynamic client is not connected", nil)
+	}
+
+	name := req.Name
+	if name == "" {
+		name = fmt.Sprintf("%s-http-scale", req.TargetName)
+	}
+
+	// Auto-discover service and port if empty
+	if req.TargetService == "" && s.clientMgr.Clientset != nil {
+		if svcs, err := s.clientMgr.Clientset.CoreV1().Services(req.Namespace).List(ctx, metav1.ListOptions{}); err == nil {
+			for _, svc := range svcs.Items {
+				if svc.Name == req.TargetName {
+					req.TargetService = svc.Name
+					if len(svc.Spec.Ports) > 0 && req.TargetPort == 0 {
+						req.TargetPort = svc.Spec.Ports[0].Port
+					}
+					break
+				}
+			}
+		}
+	}
+	if req.TargetService == "" {
+		req.TargetService = req.TargetName
+	}
+	if req.TargetPort == 0 {
+		req.TargetPort = 80
+	}
+
+	targetKind := req.TargetKind
+	if targetKind == "" {
+		targetKind = "Deployment"
+	}
+
+	scaledownPeriod := req.ScaledownPeriod
+	if scaledownPeriod <= 0 {
+		scaledownPeriod = 300
+	}
+
+	concurrency := int32(30)
+	if req.Concurrency != nil && *req.Concurrency > 0 {
+		concurrency = *req.Concurrency
+	}
+
+	spec := map[string]interface{}{
+		"replicas": map[string]interface{}{
+			"min": req.MinReplicas,
+			"max": req.MaxReplicas,
+		},
+		"scaleTargetRef": map[string]interface{}{
+			"apiVersion": "apps/v1",
+			"kind":       targetKind,
+			"name":       req.TargetName,
+			"service":    req.TargetService,
+			"port":       req.TargetPort,
+		},
+		"scaledownPeriod": scaledownPeriod,
+		"scalingMetric": map[string]interface{}{
+			"concurrency": map[string]interface{}{
+				"targetValue": concurrency,
+			},
+		},
+	}
+
+	if req.RequestRate != nil && *req.RequestRate > 0 {
+		spec["scalingMetric"] = map[string]interface{}{
+			"rate": map[string]interface{}{
+				"targetValue": *req.RequestRate,
+			},
+		}
+	}
+
+	if len(req.Hosts) > 0 {
+		hostsList := make([]interface{}, len(req.Hosts))
+		for i, h := range req.Hosts {
+			hostsList[i] = h
+		}
+		spec["hosts"] = hostsList
+	}
+
+	resClient := s.clientMgr.DynamicClient.Resource(kedaHTTPGVR).Namespace(req.Namespace)
+	existing, err := resClient.Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			newObj := &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"apiVersion": "http.keda.sh/v1alpha1",
+					"kind":       "HTTPScaledObject",
+					"metadata": map[string]interface{}{
+						"name":      name,
+						"namespace": req.Namespace,
+					},
+					"spec": spec,
+				},
+			}
+			created, createErr := resClient.Create(ctx, newObj, metav1.CreateOptions{})
+			if createErr != nil {
+				return nil, errors.InternalError("Failed to create HTTPScaledObject", createErr)
+			}
+			s.BroadcastK8sChange("keda-http", "created", req.Namespace, name)
+			dto := unstructuredToKedaHTTPDTO(created)
+			return &dto, nil
+		}
+		return nil, errors.InternalError("Failed to check existing HTTPScaledObject", err)
+	}
+
+	existing.Object["spec"] = spec
+	updated, updateErr := resClient.Update(ctx, existing, metav1.UpdateOptions{})
+	if updateErr != nil {
+		return nil, errors.InternalError("Failed to update HTTPScaledObject", updateErr)
+	}
+
+	s.BroadcastK8sChange("keda-http", "updated", req.Namespace, name)
+	dto := unstructuredToKedaHTTPDTO(updated)
+	return &dto, nil
+}
+
+// DeleteKedaHTTP deletes an HTTPScaledObject by name.
+func (s *K8sService) DeleteKedaHTTP(ctx context.Context, namespace, name string) error {
+	if !s.clientMgr.Connected || s.clientMgr.DynamicClient == nil {
+		s.BroadcastK8sChange("keda-http", "deleted", namespace, name)
+		return nil
+	}
+
+	err := s.clientMgr.DynamicClient.Resource(kedaHTTPGVR).Namespace(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return errors.InternalError("Failed to delete HTTPScaledObject", err)
+	}
+
+	s.BroadcastK8sChange("keda-http", "deleted", namespace, name)
+	return nil
+}
+
+
 
 

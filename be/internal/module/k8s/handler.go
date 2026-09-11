@@ -862,3 +862,82 @@ func (h *K8sHandler) DeleteHPA() fiber.Handler {
 		return response.SuccessResponse(c, fiber.Map{"deleted": true, "name": name, "namespace": namespace}, "HorizontalPodAutoscaler deleted successfully")
 	}
 }
+
+// GetWorkloadAutoscaler handles GET /api/v1/k8s/autoscaling/:namespace/workload/:kind/:name.
+func (h *K8sHandler) GetWorkloadAutoscaler() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		namespace := c.Params("namespace")
+		kind := c.Params("kind")
+		name := c.Params("name")
+		as, err := h.service.GetWorkloadAutoscaler(c.Context(), namespace, kind, name)
+		if err != nil {
+			return err
+		}
+		return response.SuccessResponse(c, as, "Workload autoscaler retrieved successfully")
+	}
+}
+
+// ListKedaHTTPScaledObjects handles GET /api/v1/k8s/autoscaling/keda-http.
+func (h *K8sHandler) ListKedaHTTPScaledObjects() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		namespace := c.Query("namespace", "")
+		items, err := h.service.ListKedaHTTPScaledObjects(c.Context(), namespace)
+		if err != nil {
+			return err
+		}
+		return response.SuccessResponse(c, items, "KEDA HTTPScaledObjects retrieved successfully")
+	}
+}
+
+// GetKedaHTTPForWorkload handles GET /api/v1/k8s/autoscaling/keda-http/:namespace/workload/:kind/:name.
+func (h *K8sHandler) GetKedaHTTPForWorkload() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		namespace := c.Params("namespace")
+		kind := c.Params("kind")
+		name := c.Params("name")
+		item, err := h.service.GetKedaHTTPForWorkload(c.Context(), namespace, kind, name)
+		if err != nil {
+			return err
+		}
+		return response.SuccessResponse(c, item, "KEDA HTTPScaledObject retrieved successfully")
+	}
+}
+
+// SaveKedaHTTPScaledObject handles POST /api/v1/k8s/autoscaling/keda-http.
+func (h *K8sHandler) SaveKedaHTTPScaledObject() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var req SaveKedaHTTPRequest
+		if err := c.BodyParser(&req); err != nil {
+			return errors.BadRequest("Invalid JSON body")
+		}
+		if req.Namespace == "" || req.TargetName == "" {
+			return errors.BadRequest("Namespace and target_name are required")
+		}
+		if req.MinReplicas < 0 {
+			req.MinReplicas = 0
+		}
+		if req.MaxReplicas < req.MinReplicas || req.MaxReplicas < 1 {
+			return errors.BadRequest("max_replicas must be >= 1 and >= min_replicas")
+		}
+
+		item, err := h.service.SaveKedaHTTP(c.Context(), req)
+		if err != nil {
+			return err
+		}
+		return response.SuccessResponse(c, item, "KEDA HTTPScaledObject saved successfully")
+	}
+}
+
+// DeleteKedaHTTPScaledObject handles DELETE /api/v1/k8s/autoscaling/keda-http/:namespace/:name.
+func (h *K8sHandler) DeleteKedaHTTPScaledObject() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		namespace := c.Params("namespace")
+		name := c.Params("name")
+		err := h.service.DeleteKedaHTTP(c.Context(), namespace, name)
+		if err != nil {
+			return err
+		}
+		return response.SuccessResponse(c, fiber.Map{"deleted": true, "name": name, "namespace": namespace}, "KEDA HTTPScaledObject deleted successfully")
+	}
+}
+

@@ -188,25 +188,64 @@ function closeDialog() {
               >
                 Pod Replicas (Manual Scaling)
               </label>
-              <div class="flex items-center gap-3 mt-2">
-                <InputNumber
-                  v-model="replicas"
-                  show-buttons
-                  button-layout="horizontal"
-                  :min="0"
-                  :max="100"
-                  class="w-48 font-mono text-sm"
-                />
-                <span class="text-xs text-slate-500"
-                  >Currently {{ deployment?.ready_replicas ?? 0 }} ready pods</span
+              <div class="flex flex-wrap items-center gap-4 mt-2">
+                <!-- Custom Stepper -->
+                <div
+                  class="inline-flex items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-1 shadow-xs"
                 >
+                  <button
+                    type="button"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                    :disabled="replicas <= 0"
+                    title="Decrease replicas"
+                    @click="replicas = Math.max(0, (replicas || 0) - 1)"
+                  >
+                    <i class="pi pi-minus text-xs"></i>
+                  </button>
+                  <input
+                    v-model.number="replicas"
+                    type="number"
+                    min="0"
+                    max="100"
+                    class="w-14 text-center font-mono font-bold text-sm bg-transparent border-0 text-slate-900 dark:text-slate-100 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <button
+                    type="button"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                    :disabled="replicas >= 100"
+                    title="Increase replicas"
+                    @click="replicas = Math.min(100, (replicas || 0) + 1)"
+                  >
+                    <i class="pi pi-plus text-xs"></i>
+                  </button>
+                </div>
+
+                <!-- Ready Pods Status Badge -->
+                <div
+                  class="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-mono font-medium shadow-xs"
+                  :class="
+                    deployment?.ready_replicas === deployment?.replicas
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                      : 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
+                  "
+                >
+                  <span
+                    class="w-2 h-2 rounded-full"
+                    :class="
+                      deployment?.ready_replicas === deployment?.replicas
+                        ? 'bg-emerald-500'
+                        : 'bg-amber-500 animate-pulse'
+                    "
+                  ></span>
+                  <span>Currently {{ deployment?.ready_replicas ?? 0 }} / {{ deployment?.replicas ?? 0 }} ready pods</span>
+                </div>
               </div>
             </div>
 
             <div class="pt-2 sm:pt-0">
               <Button
-                label="Configure Max/Min Autoscaling (HPA)"
-                icon="pi pi-sliders-h"
+                label="Configure Autoscaling (KEDA / HPA)"
+                icon="pi pi-bolt"
                 size="small"
                 outlined
                 severity="info"

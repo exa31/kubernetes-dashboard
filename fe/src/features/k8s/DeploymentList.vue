@@ -12,15 +12,22 @@ import { useToast } from 'primevue/usetoast'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useK8sRealtime } from '@/composables'
-import DeployWorkloadDialog from '@/features/k8s/DeployWorkloadDialog.vue'
 import DeploymentEditorDialog from '@/features/k8s/DeploymentEditorDialog.vue'
 import DeploymentRollbackDialog from '@/features/k8s/DeploymentRollbackDialog.vue'
+import DeployWorkloadDialog from '@/features/k8s/DeployWorkloadDialog.vue'
 import HpaScaleDialog from '@/features/k8s/HpaScaleDialog.vue'
 import PodLogsDialog from '@/features/k8s/PodLogsDialog.vue'
 import ResourceYamlDialog from '@/features/k8s/ResourceYamlDialog.vue'
 import WebTerminalDialog from '@/features/k8s/WebTerminalDialog.vue'
 import { useAuthStore, useK8sStore } from '@/stores'
-import type { DaemonSetItem, DeploymentItem, HPAItem, PodItem, StatefulSetItem } from '@/types'
+import type {
+  DaemonSetItem,
+  DeploymentItem,
+  HPAItem,
+  KedaHTTPScaledObject,
+  PodItem,
+  StatefulSetItem
+} from '@/types'
 
 const authStore = useAuthStore()
 const k8sStore = useK8sStore()
@@ -32,6 +39,7 @@ const {
   daemonsets,
   pods,
   hpas,
+  kedaHttpObjects,
   podMetrics,
   selectedNamespace,
   isLoading,
@@ -284,6 +292,61 @@ const hpaMap = computed<Record<string, HPAItem>>(() => {
   }
   return map
 })
+
+const kedaMap = computed<Record<string, KedaHTTPScaledObject>>(() => {
+  const map: Record<string, KedaHTTPScaledObject> = {}
+  for (const k of kedaHttpObjects.value) {
+    map[`${k.target_kind}/${k.target_name}`] = k
+    map[k.target_name] = k
+  }
+  return map
+})
+
+const filteredKedaObjects = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return kedaHttpObjects.value
+  return kedaHttpObjects.value.filter(
+    (k) =>
+      k.name.toLowerCase().includes(q) ||
+      k.target_name.toLowerCase().includes(q) ||
+      k.target_service.toLowerCase().includes(q)
+  )
+})
+
+function deleteKedaItem(item: KedaHTTPScaledObject) {
+  confirm.require({
+    message: `Are you sure you want to remove KEDA HTTP autoscaling for '${item.name}' (${item.target_name})?`,
+    header: 'Delete KEDA Autoscaler',
+    icon: 'pi pi-exclamation-triangle',
+    rejectProps: {
+      label: 'Cancel',
+      severity: 'secondary',
+      outlined: true
+    },
+    acceptProps: {
+      label: 'Delete',
+      severity: 'danger'
+    },
+    accept: async () => {
+      try {
+        await k8sStore.deleteKedaHTTPScaledObject(item.name, item.namespace)
+        toast.add({
+          severity: 'success',
+          summary: 'Autoscaler Removed',
+          detail: `KEDA Autoscaler '${item.name}' deleted successfully`,
+          life: 3000
+        })
+      } catch (err: unknown) {
+        toast.add({
+          severity: 'error',
+          summary: 'Delete Failed',
+          detail: err instanceof Error ? err.message : 'Unknown error',
+          life: 5000
+        })
+      }
+    }
+  })
+}
 
 function openHpaScale(
   name: string,
@@ -686,10 +749,10 @@ function getPhaseColor(phase: string, reason?: string) {
         "
         @click="activeTab = 'hpas'"
       >
-        <i class="pi pi-sliders-h text-xs"></i>
-        <span>Autoscalers (HPA)</span>
-        <span class="px-1.5 py-0.2 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-300">
-          {{ hpas.length }}
+        <i class="pi pi-bolt text-xs text-cyan-400"></i>
+        <span>Autoscalers (KEDA & HPA)</span>
+        <span class="px-1.5 py-0.2 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-300 font-bold">
+          {{ kedaHttpObjects.length + hpas.length }}
         </span>
       </button>
     </div>
@@ -819,15 +882,26 @@ function getPhaseColor(phase: string, reason?: string) {
                 {{ data.ready_replicas }}/{{ data.replicas }}
               </span>
 
+              <!-- KEDA HTTP badge if active -->
+              <span
+                v-if="kedaMap[data.name]"
+                class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center gap-1 cursor-pointer hover:bg-cyan-500/20 transition shrink-0"
+                title="KEDA HTTP Autoscaling active: click to configure"
+                @click="openHpaScale(data.name, 'Deployment', data.replicas)"
+              >
+                <i class="pi pi-bolt text-[9px] text-cyan-400"></i>
+                <span>{{ kedaMap[data.name].min_replicas }}-{{ kedaMap[data.name].max_replicas }} (KEDA)</span>
+              </span>
+
               <!-- HPA badge if active -->
               <span
-                v-if="hpaMap[data.name]"
-                class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center gap-1 cursor-pointer hover:bg-cyan-500/20 transition shrink-0"
-                title="Autoscaling active: click to manage max/min scaling"
+                v-else-if="hpaMap[data.name]"
+                class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-sky-500/10 text-sky-400 border border-sky-500/30 flex items-center gap-1 cursor-pointer hover:bg-sky-500/20 transition shrink-0"
+                title="HPA Autoscaling active: click to configure"
                 @click="openHpaScale(data.name, 'Deployment', data.replicas)"
               >
                 <i class="pi pi-sliders-h text-[9px]"></i>
-                <span>{{ hpaMap[data.name].min_replicas }}-{{ hpaMap[data.name].max_replicas }}</span>
+                <span>{{ hpaMap[data.name].min_replicas }}-{{ hpaMap[data.name].max_replicas }} (HPA)</span>
               </span>
 
               <!-- Quick scale buttons -->
@@ -1441,156 +1515,309 @@ function getPhaseColor(phase: string, reason?: string) {
       </DataTable>
     </div>
 
-    <!-- TAB 5: Autoscalers (HPA) -->
-    <div
-      v-if="activeTab === 'hpas'"
-      class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl bg-white dark:bg-slate-900/90"
-    >
-      <DataTable
-        :value="filteredHPAs"
-        :loading="isLoading"
-        responsive-layout="scroll"
-        class="p-datatable-sm"
-      >
-        <!-- HPA Name & Target -->
-        <Column field="name" header="Autoscaler / Target Workload" sortable style="min-width: 16rem">
-          <template #body="{ data }">
-            <div class="flex items-center gap-2.5">
-              <div
-                class="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0"
-              >
-                <i class="pi pi-sliders-h text-sm"></i>
-              </div>
-              <div>
-                <div class="font-bold text-slate-900 dark:text-slate-100 text-xs font-mono">
-                  {{ data.name }}
+    <!-- TAB 5: Autoscalers (KEDA & HPA) -->
+    <div v-if="activeTab === 'hpas'" class="space-y-6">
+      <!-- Section 1: KEDA HTTP Autoscalers (Per-Request / Concurrency) -->
+      <div class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl bg-white dark:bg-slate-900/90">
+        <div class="px-5 py-3.5 bg-slate-50 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+              <i class="pi pi-bolt text-xs"></i>
+            </div>
+            <div>
+              <h3 class="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider font-mono">
+                KEDA HTTP Autoscalers (Per-Request & Scale-to-Zero)
+              </h3>
+              <p class="text-[11px] text-slate-400">Event-driven scaling based on HTTP request concurrency</p>
+            </div>
+          </div>
+          <Tag :value="`${filteredKedaObjects.length} Active`" severity="info" class="text-[10px] font-mono px-2 py-0.5" />
+        </div>
+
+        <DataTable
+          :value="filteredKedaObjects"
+          :loading="isLoading"
+          responsive-layout="scroll"
+          class="p-datatable-sm"
+        >
+          <!-- Name & Workload -->
+          <Column field="name" header="Autoscaler / Target Workload" sortable style="min-width: 16rem">
+            <template #body="{ data }">
+              <div class="flex items-center gap-2.5">
+                <div
+                  class="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0"
+                >
+                  <i class="pi pi-bolt text-sm"></i>
                 </div>
-                <div class="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5 font-mono">
-                  <span>Target:</span>
-                  <span class="px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 font-semibold text-[10px]">
-                    {{ data.target_kind }}/{{ data.target_name }}
+                <div>
+                  <div class="font-bold text-slate-900 dark:text-slate-100 text-xs font-mono">
+                    {{ data.name }}
+                  </div>
+                  <div class="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5 font-mono">
+                    <span>Workload:</span>
+                    <span class="px-1.5 py-0.2 rounded bg-slate-800 text-cyan-300 font-semibold text-[10px]">
+                      {{ data.target_workload || `${data.target_kind}/${data.target_name}` }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </Column>
+
+          <!-- Scaling Range -->
+          <Column header="Scaling Range (Min - Max)" style="min-width: 14rem">
+            <template #body="{ data }">
+              <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                  <span
+                    class="px-2 py-0.5 rounded text-xs font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center gap-1"
+                  >
+                    <span>{{ data.min_replicas }} - {{ data.max_replicas }} Pods</span>
+                  </span>
+                  <span
+                    v-if="data.min_replicas === 0"
+                    class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30 uppercase"
+                  >
+                    Scale-to-Zero
                   </span>
                 </div>
+                <div class="text-[11px] text-slate-400 font-mono">
+                  Cooldown: <b class="text-slate-200">{{ data.scaledown_period }}s</b>
+                </div>
               </div>
-            </div>
-          </template>
-        </Column>
+            </template>
+          </Column>
 
-        <!-- Min & Max Boundaries -->
-        <Column header="Scaling Range (Min - Max)" style="min-width: 14rem">
-          <template #body="{ data }">
-            <div class="space-y-1">
-              <div class="flex items-center gap-2">
-                <span
-                  class="px-2 py-0.5 rounded text-xs font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30"
-                >
-                  {{ data.min_replicas }} - {{ data.max_replicas }} Pods
-                </span>
-                <span class="text-[11px] text-slate-400 font-mono">
-                  (Current: <b class="text-white">{{ data.current_replicas }}</b>)
-                </span>
+          <!-- Metric Trigger -->
+          <Column header="Request Metric Trigger" style="min-width: 14rem">
+            <template #body="{ data }">
+              <div class="space-y-1 text-xs font-mono">
+                <div class="flex items-center gap-1.5 text-cyan-400 font-semibold">
+                  <i class="pi pi-sliders-v text-[10px]"></i>
+                  <span>{{ data.concurrency ?? 30 }} req/pod target</span>
+                </div>
+                <div class="text-[11px] text-slate-400">
+                  Service: <b class="text-slate-300">{{ data.target_service }}:{{ data.target_port }}</b>
+                </div>
               </div>
-              <div class="w-36 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  class="h-full bg-cyan-500 rounded-full transition-all"
-                  :style="{
-                    width: `${Math.min(100, Math.max(10, (data.current_replicas / (data.max_replicas || 1)) * 100))}%`
-                  }"
-                ></div>
-              </div>
-            </div>
-          </template>
-        </Column>
+            </template>
+          </Column>
 
-        <!-- Metrics Targets & Current -->
-        <Column header="Target vs Current Metrics" style="min-width: 16rem">
-          <template #body="{ data }">
-            <div class="space-y-1 text-xs font-mono">
-              <div v-if="data.target_cpu" class="flex items-center gap-2">
-                <span class="text-[11px] text-slate-400">CPU:</span>
-                <span
-                  class="font-semibold"
-                  :class="
-                    data.current_cpu && data.current_cpu > data.target_cpu
-                      ? 'text-amber-400'
-                      : 'text-emerald-400'
-                  "
-                >
-                  {{ data.current_cpu !== undefined ? `${data.current_cpu}%` : 'N/A' }}
-                </span>
-                <span class="text-slate-500">/</span>
-                <span class="text-slate-300">{{ data.target_cpu }}% target</span>
-              </div>
-              <div v-if="data.target_memory" class="flex items-center gap-2">
-                <span class="text-[11px] text-slate-400">Mem:</span>
-                <span class="font-semibold text-emerald-400">
-                  {{ data.current_memory !== undefined ? `${data.current_memory}%` : 'N/A' }}
-                </span>
-                <span class="text-slate-500">/</span>
-                <span class="text-slate-300">{{ data.target_memory }}% target</span>
-              </div>
-              <div v-if="!data.target_cpu && !data.target_memory" class="text-slate-500 text-[11px]">
-                No resource metrics configured
-              </div>
-            </div>
-          </template>
-        </Column>
-
-        <!-- Age -->
-        <Column field="age" header="Age" sortable style="min-width: 6rem">
-          <template #body="{ data }">
-            <span class="text-xs text-slate-400 font-mono">{{ data.age }}</span>
-          </template>
-        </Column>
-
-        <!-- Actions -->
-        <Column header="Actions" align-frozen="right" style="min-width: 14rem; text-align: right">
-          <template #body="{ data }">
-            <div class="flex items-center justify-end gap-1.5">
-              <!-- Configure Scaling -->
-              <Button
-                label="Configure"
-                icon="pi pi-sliders-h"
-                size="small"
-                class="btn-cyan text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                :disabled="!canMutate"
-                title="Configure Max/Min Scaling"
-                @click="openHpaScale(data.target_name, data.target_kind || 'Deployment', data.current_replicas)"
+          <!-- Status -->
+          <Column header="Status" style="min-width: 8rem">
+            <template #body="{ data }">
+              <Tag
+                :value="data.ready ? 'Ready / Active' : 'Initializing'"
+                :severity="data.ready ? 'success' : 'warn'"
+                class="text-[10px] font-mono px-2 py-0.5"
               />
+            </template>
+          </Column>
 
-              <!-- YAML -->
-              <Button
-                label="YAML"
-                icon="pi pi-code"
-                size="small"
-                class="btn-purple text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer"
-                title="View HPA YAML"
-                @click="openYamlModal('HorizontalPodAutoscaler', data.name)"
-              />
+          <!-- Age -->
+          <Column field="age" header="Age" sortable style="min-width: 6rem">
+            <template #body="{ data }">
+              <span class="text-xs text-slate-400 font-mono">{{ data.age }}</span>
+            </template>
+          </Column>
 
-              <!-- Delete HPA -->
-              <Button
-                icon="pi pi-trash"
-                size="small"
-                class="btn-rose text-xs px-2 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                :disabled="!canMutate"
-                title="Delete HPA (Disable Autoscaling)"
-                @click="deleteHpaItem(data)"
-              />
+          <!-- Actions -->
+          <Column header="Actions" align-frozen="right" style="min-width: 14rem; text-align: right">
+            <template #body="{ data }">
+              <div class="flex items-center justify-end gap-1.5">
+                <Button
+                  label="Configure"
+                  icon="pi pi-sliders-h"
+                  size="small"
+                  class="btn-cyan text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  :disabled="!canMutate"
+                  title="Configure KEDA Autoscaler"
+                  @click="openHpaScale(data.target_name, data.target_kind || 'Deployment', 1)"
+                />
+                <Button
+                  label="YAML"
+                  icon="pi pi-code"
+                  size="small"
+                  class="btn-purple text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer"
+                  title="View YAML Manifest"
+                  @click="openYamlModal('HTTPScaledObject', data.name)"
+                />
+                <Button
+                  icon="pi pi-trash"
+                  size="small"
+                  class="btn-rose text-xs px-2 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  :disabled="!canMutate"
+                  title="Delete KEDA Autoscaler"
+                  @click="deleteKedaItem(data)"
+                />
+              </div>
+            </template>
+          </Column>
+
+          <template #empty>
+            <div class="py-8 text-center text-slate-400">
+              <i class="pi pi-bolt text-2xl mb-1 text-slate-500"></i>
+              <p class="text-xs text-slate-400 font-mono">No KEDA HTTP Autoscalers in {{ selectedNamespace }}</p>
             </div>
           </template>
-        </Column>
+        </DataTable>
+      </div>
 
-        <template #empty>
-          <div class="py-12 text-center text-slate-400">
-            <i class="pi pi-sliders-h text-3xl mb-2 text-slate-500"></i>
-            <h3 class="font-semibold text-slate-200">No Autoscalers (HPA) Configured</h3>
-            <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-              There are no HorizontalPodAutoscalers in {{ selectedNamespace }}. You can enable Max/Min autoscaling from any Deployment or StatefulSet row by clicking <strong>Scale</strong>.
-            </p>
+      <!-- Section 2: Standard HPA (Resource Metrics) -->
+      <div class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl bg-white dark:bg-slate-900/90">
+        <div class="px-5 py-3.5 bg-slate-50 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400">
+              <i class="pi pi-chart-line text-xs"></i>
+            </div>
+            <div>
+              <h3 class="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider font-mono">
+                Standard HPA (CPU / Memory Resource Metrics)
+              </h3>
+              <p class="text-[11px] text-slate-400">Kubernetes HorizontalPodAutoscalers</p>
+            </div>
           </div>
-        </template>
-      </DataTable>
+          <Tag :value="`${filteredHPAs.length} Active`" severity="info" class="text-[10px] font-mono px-2 py-0.5" />
+        </div>
+
+        <DataTable
+          :value="filteredHPAs"
+          :loading="isLoading"
+          responsive-layout="scroll"
+          class="p-datatable-sm"
+        >
+          <!-- HPA Name & Target -->
+          <Column field="name" header="Autoscaler / Target Workload" sortable style="min-width: 16rem">
+            <template #body="{ data }">
+              <div class="flex items-center gap-2.5">
+                <div
+                  class="w-8 h-8 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 shrink-0"
+                >
+                  <i class="pi pi-sliders-h text-sm"></i>
+                </div>
+                <div>
+                  <div class="font-bold text-slate-900 dark:text-slate-100 text-xs font-mono">
+                    {{ data.name }}
+                  </div>
+                  <div class="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5 font-mono">
+                    <span>Target:</span>
+                    <span class="px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 font-semibold text-[10px]">
+                      {{ data.target_kind }}/{{ data.target_name }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </Column>
+
+          <!-- Min & Max Boundaries -->
+          <Column header="Scaling Range (Min - Max)" style="min-width: 14rem">
+            <template #body="{ data }">
+              <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                  <span
+                    class="px-2 py-0.5 rounded text-xs font-mono font-bold bg-sky-500/10 text-sky-400 border border-sky-500/30"
+                  >
+                    {{ data.min_replicas }} - {{ data.max_replicas }} Pods
+                  </span>
+                  <span class="text-[11px] text-slate-400 font-mono">
+                    (Current: <b class="text-white">{{ data.current_replicas }}</b>)
+                  </span>
+                </div>
+                <div class="w-36 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    class="h-full bg-sky-500 rounded-full transition-all"
+                    :style="{
+                      width: `${Math.min(100, Math.max(10, (data.current_replicas / (data.max_replicas || 1)) * 100))}%`
+                    }"
+                  ></div>
+                </div>
+              </div>
+            </template>
+          </Column>
+
+          <!-- Metrics Targets & Current -->
+          <Column header="Target vs Current Metrics" style="min-width: 16rem">
+            <template #body="{ data }">
+              <div class="space-y-1 text-xs font-mono">
+                <div v-if="data.target_cpu" class="flex items-center gap-2">
+                  <span class="text-[11px] text-slate-400">CPU:</span>
+                  <span
+                    class="font-semibold"
+                    :class="
+                      data.current_cpu && data.current_cpu > data.target_cpu
+                        ? 'text-amber-400'
+                        : 'text-emerald-400'
+                    "
+                  >
+                    {{ data.current_cpu !== undefined ? `${data.current_cpu}%` : 'N/A' }}
+                  </span>
+                  <span class="text-slate-500">/</span>
+                  <span class="text-slate-300">{{ data.target_cpu }}% target</span>
+                </div>
+                <div v-if="data.target_memory" class="flex items-center gap-2">
+                  <span class="text-[11px] text-slate-400">Mem:</span>
+                  <span class="font-semibold text-emerald-400">
+                    {{ data.current_memory !== undefined ? `${data.current_memory}%` : 'N/A' }}
+                  </span>
+                  <span class="text-slate-500">/</span>
+                  <span class="text-slate-300">{{ data.target_memory }}% target</span>
+                </div>
+                <div v-if="!data.target_cpu && !data.target_memory" class="text-slate-500 text-[11px]">
+                  No resource metrics configured
+                </div>
+              </div>
+            </template>
+          </Column>
+
+          <!-- Age -->
+          <Column field="age" header="Age" sortable style="min-width: 6rem">
+            <template #body="{ data }">
+              <span class="text-xs text-slate-400 font-mono">{{ data.age }}</span>
+            </template>
+          </Column>
+
+          <!-- Actions -->
+          <Column header="Actions" align-frozen="right" style="min-width: 14rem; text-align: right">
+            <template #body="{ data }">
+              <div class="flex items-center justify-end gap-1.5">
+                <Button
+                  label="Configure"
+                  icon="pi pi-sliders-h"
+                  size="small"
+                  class="btn-sky text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  :disabled="!canMutate"
+                  title="Configure Max/Min Scaling"
+                  @click="openHpaScale(data.target_name, data.target_kind || 'Deployment', data.current_replicas)"
+                />
+                <Button
+                  label="YAML"
+                  icon="pi pi-code"
+                  size="small"
+                  class="btn-purple text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer"
+                  title="View HPA YAML"
+                  @click="openYamlModal('HorizontalPodAutoscaler', data.name)"
+                />
+                <Button
+                  icon="pi pi-trash"
+                  size="small"
+                  class="btn-rose text-xs px-2 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  :disabled="!canMutate"
+                  title="Delete HPA"
+                  @click="deleteHpaItem(data)"
+                />
+              </div>
+            </template>
+          </Column>
+
+          <template #empty>
+            <div class="py-8 text-center text-slate-400">
+              <i class="pi pi-sliders-h text-2xl mb-1 text-slate-500"></i>
+              <p class="text-xs text-slate-400 font-mono">No standard Resource HPAs in {{ selectedNamespace }}</p>
+            </div>
+          </template>
+        </DataTable>
+      </div>
     </div>
 
     <!-- Modals -->

@@ -519,3 +519,44 @@ export interface SaveHPAPayload {
   target_cpu?: number
   target_memory?: number
 }
+
+export interface KedaHTTPScaledObject {
+  name: string
+  namespace: string
+  target_workload: string
+  target_kind: string
+  target_name: string
+  target_service: string
+  target_port: number
+  min_replicas: number
+  max_replicas: number
+  concurrency?: number
+  request_rate?: number
+  scaledown_period: number
+  hosts?: string[]
+  ready: boolean
+  age: string
+  created_at: string
+}
+
+export interface SaveKedaHTTPPayload {
+  name?: string
+  namespace: string
+  target_kind?: string
+  target_name: string
+  target_service?: string
+  target_port?: number
+  min_replicas: number
+  max_replicas: number
+  concurrency?: number
+  request_rate?: number
+  scaledown_period?: number
+  hosts?: string[]
+}
+
+export interface WorkloadAutoscaler {
+  type: 'keda-http' | 'hpa' | 'none'
+  keda_http?: KedaHTTPScaledObject
+  hpa?: HPADetail
+}
+

@@ -177,6 +177,30 @@
   @apply outline-none ring-2 ring-sky-500/30 border-sky-500;
 }
 
+.p-inputnumber {
+  max-width: 100%;
+}
+
+.p-inputnumber.w-full {
+  width: 100% !important;
+}
+
+.p-inputnumber-buttons-horizontal {
+  display: flex !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.p-inputnumber-buttons-horizontal .p-inputnumber-input {
+  min-width: 0 !important;
+  flex: 1 1 0% !important;
+  width: 100% !important;
+}
+
+.p-inputnumber-input {
+  min-width: 0 !important;
+}
+
 /* Tags */
 .p-tag {
   @apply rounded-md font-mono text-xs px-2.5 py-0.5 font-medium inline-flex items-center gap-1;

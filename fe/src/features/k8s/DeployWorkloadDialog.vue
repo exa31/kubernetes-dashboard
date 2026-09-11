@@ -44,10 +44,11 @@ const memoryRequest = ref('256Mi')
 const memoryLimit = ref('512Mi')
 
 // Scaling
-const scalingMode = ref<'manual' | 'hpa'>('manual')
-const manualReplicas = ref(2)
-const minReplicas = ref(1)
-const maxReplicas = ref(5)
+const scalingMode = ref<'keda' | 'hpa' | 'manual'>('keda')
+const manualReplicas = ref(1)
+const minReplicas = ref(0)
+const maxReplicas = ref(3)
+const targetConcurrency = ref(30)
 const targetCpuPct = ref(75)
 
 // Environment Variables
@@ -297,7 +298,12 @@ async function deployWorkload() {
     name: workloadName.value.trim().toLowerCase(),
     namespace: selectedNs.value,
     image: image.value.trim(),
-    replicas: scalingMode.value === 'manual' ? manualReplicas.value : minReplicas.value,
+    replicas:
+      scalingMode.value === 'manual'
+        ? manualReplicas.value
+        : minReplicas.value > 0
+        ? minReplicas.value
+        : 1,
     port: containerPort.value ?? undefined,
     cpu_request: cpuRequest.value,
     cpu_limit: cpuLimit.value,
@@ -314,7 +320,7 @@ async function deployWorkload() {
       namespace: selectedNs.value,
       target_name: workloadName.value.trim().toLowerCase(),
       target_kind: 'Deployment',
-      min_replicas: minReplicas.value,
+      min_replicas: Math.max(1, minReplicas.value),
       max_replicas: maxReplicas.value,
       target_cpu: targetCpuPct.value
     }
@@ -322,6 +328,26 @@ async function deployWorkload() {
 
   try {
     await k8sStore.createDeployment(payload)
+
+    // If KEDA mode selected, create HTTPScaledObject
+    if (scalingMode.value === 'keda') {
+      try {
+        await k8sStore.saveKedaHTTPScaledObject({
+          namespace: selectedNs.value,
+          target_name: payload.name,
+          target_kind: 'Deployment',
+          target_service: exposeService.value ? payload.name : undefined,
+          target_port: servicePort.value || containerPort.value || 80,
+          min_replicas: minReplicas.value,
+          max_replicas: maxReplicas.value,
+          concurrency: targetConcurrency.value || 30,
+          scaledown_period: 300
+        })
+      } catch (kedaErr) {
+        logger.warn('Workload deployed, but KEDA autoscaling setup had warning:', kedaErr)
+      }
+    }
+
     emit('deployed', payload.name)
     emit('update:visible', false)
   } catch (err: unknown) {
@@ -823,7 +849,45 @@ watch(
           </div>
 
           <!-- Strategy Toggle -->
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button
+              type="button"
+              class="p-4 rounded-xl text-left border transition cursor-pointer"
+              :class="
+                scalingMode === 'keda'
+                  ? 'bg-cyan-500/10 border-cyan-500/60 ring-1 ring-cyan-500/40'
+                  : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
+              "
+              @click="scalingMode = 'keda'"
+            >
+              <div class="flex items-center gap-2">
+                <i class="pi pi-bolt text-cyan-400"></i>
+                <span class="font-bold text-xs text-slate-200">KEDA HTTP (Per-Request)</span>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1.5">
+                Scale pods on request concurrency. Supports Scale-to-Zero when idle.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              class="p-4 rounded-xl text-left border transition cursor-pointer"
+              :class="
+                scalingMode === 'hpa'
+                  ? 'bg-sky-500/10 border-sky-500/60 ring-1 ring-sky-500/40'
+                  : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
+              "
+              @click="scalingMode = 'hpa'"
+            >
+              <div class="flex items-center gap-2">
+                <i class="pi pi-chart-line text-emerald-400"></i>
+                <span class="font-bold text-xs text-slate-200">Resource HPA (CPU)</span>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1.5">
+                Scale pods between Min and Max limits based on CPU/RAM usage.
+              </p>
+            </button>
+
             <button
               type="button"
               class="p-4 rounded-xl text-left border transition cursor-pointer"
@@ -842,57 +906,107 @@ watch(
                 Always run a static number of pod replicas regardless of traffic.
               </p>
             </button>
+          </div>
 
-            <button
-              type="button"
-              class="p-4 rounded-xl text-left border transition cursor-pointer"
-              :class="
-                scalingMode === 'hpa'
-                  ? 'bg-sky-500/10 border-sky-500/60 ring-1 ring-sky-500/40'
-                  : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
-              "
-              @click="scalingMode = 'hpa'"
-            >
-              <div class="flex items-center gap-2">
-                <i class="pi pi-chart-line text-emerald-400"></i>
-                <span class="font-bold text-xs text-slate-200">Horizontal Pod Autoscaling (HPA)</span>
+          <!-- KEDA HTTP Form -->
+          <div v-if="scalingMode === 'keda'" class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Min Replicas (Scale-to-0)
+                </label>
+                <input
+                  v-model.number="minReplicas"
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="0"
+                  class="w-full h-9 px-3 font-mono text-xs rounded-lg border border-slate-700 bg-slate-900 text-slate-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                />
+                <p class="text-[11px] text-slate-500 mt-1">Set to 0 to shut down pods when idle</p>
               </div>
-              <p class="text-[11px] text-slate-400 mt-1.5">
-                Automatically scale pods between Min and Max limits based on CPU utilization.
-              </p>
-            </button>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Max Replicas
+                </label>
+                <input
+                  v-model.number="maxReplicas"
+                  type="number"
+                  :min="minReplicas"
+                  max="100"
+                  placeholder="3"
+                  class="w-full h-9 px-3 font-mono text-xs rounded-lg border border-slate-700 bg-slate-900 text-slate-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                />
+                <p class="text-[11px] text-slate-500 mt-1">Maximum scale ceiling</p>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Target Concurrency
+                </label>
+                <input
+                  v-model.number="targetConcurrency"
+                  type="number"
+                  min="1"
+                  max="1000"
+                  placeholder="30"
+                  class="w-full h-9 px-3 font-mono text-xs rounded-lg border border-slate-700 bg-slate-900 text-slate-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                />
+                <p class="text-[11px] text-slate-500 mt-1">Concurrent requests / pod before scale</p>
+              </div>
+            </div>
           </div>
 
           <!-- Manual Replicas Form -->
-          <div v-if="scalingMode === 'manual'" class="p-4 rounded-lg bg-slate-950 border border-slate-800">
+          <div v-if="scalingMode === 'manual'" class="p-4 rounded-xl bg-slate-950 border border-slate-800">
             <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
               Number of Replicas
             </label>
             <div class="flex items-center gap-4">
-              <InputNumber
-                v-model="manualReplicas"
-                show-buttons
-                button-layout="horizontal"
-                :min="1"
-                :max="100"
-                class="w-48 font-mono text-sm"
-              />
-              <span class="text-xs text-slate-400">pod instance(s) running simultaneously</span>
+              <div class="inline-flex items-center rounded-xl border border-slate-700 bg-slate-900 p-1 shadow-xs">
+                <button
+                  type="button"
+                  class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer disabled:opacity-30"
+                  :disabled="manualReplicas <= 1"
+                  @click="manualReplicas = Math.max(1, manualReplicas - 1)"
+                >
+                  <i class="pi pi-minus text-xs"></i>
+                </button>
+                <input
+                  v-model.number="manualReplicas"
+                  type="number"
+                  min="1"
+                  max="100"
+                  class="w-14 text-center font-mono font-bold text-sm bg-transparent border-0 text-slate-100 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer disabled:opacity-30"
+                  :disabled="manualReplicas >= 100"
+                  @click="manualReplicas = Math.min(100, manualReplicas + 1)"
+                >
+                  <i class="pi pi-plus text-xs"></i>
+                </button>
+              </div>
+              <span class="text-xs text-slate-400 font-mono">pod instance(s) running simultaneously</span>
             </div>
           </div>
 
           <!-- HPA Form -->
-          <div v-if="scalingMode === 'hpa'" class="p-4 rounded-lg bg-slate-950 border border-slate-800 space-y-4">
+          <div v-if="scalingMode === 'hpa'" class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
                   Min Replicas
                 </label>
-                <InputNumber
-                  v-model="minReplicas"
-                  :min="1"
-                  :max="maxReplicas"
-                  class="w-full font-mono text-xs"
+                <input
+                  v-model.number="minReplicas"
+                  type="number"
+                  min="1"
+                  max="100"
+                  placeholder="1"
+                  class="w-full h-9 px-3 font-mono text-xs rounded-lg border border-slate-700 bg-slate-900 text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 />
                 <p class="text-[11px] text-slate-500 mt-1">Minimum active pods (idle load)</p>
               </div>
@@ -901,11 +1015,13 @@ watch(
                 <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
                   Max Replicas
                 </label>
-                <InputNumber
-                  v-model="maxReplicas"
+                <input
+                  v-model.number="maxReplicas"
+                  type="number"
                   :min="minReplicas"
-                  :max="100"
-                  class="w-full font-mono text-xs"
+                  max="100"
+                  placeholder="5"
+                  class="w-full h-9 px-3 font-mono text-xs rounded-lg border border-slate-700 bg-slate-900 text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 />
                 <p class="text-[11px] text-slate-500 mt-1">Ceiling during peak traffic spikes</p>
               </div>
@@ -914,12 +1030,13 @@ watch(
                 <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
                   Target CPU Utilization (%)
                 </label>
-                <InputNumber
-                  v-model="targetCpuPct"
-                  :min="10"
-                  :max="100"
-                  suffix="%"
-                  class="w-full font-mono text-xs"
+                <input
+                  v-model.number="targetCpuPct"
+                  type="number"
+                  min="10"
+                  max="100"
+                  placeholder="75"
+                  class="w-full h-9 px-3 font-mono text-xs rounded-lg border border-slate-700 bg-slate-900 text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 />
                 <p class="text-[11px] text-slate-500 mt-1">Trigger scale up when avg CPU crosses this</p>
               </div>

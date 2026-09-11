@@ -11,6 +11,7 @@ import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
 
+import { useAuthStore, useK8sStore } from '@/stores'
 import type { CronJobDetail, CronJobItem } from '@/types'
 import { describeCron, formatDate } from '@/utils'
 
@@ -18,7 +19,6 @@ import CreateCronJobDialog from './CreateCronJobDialog.vue'
 import CronJobEditorDialog from './CronJobEditorDialog.vue'
 import CronJobHistoryDialog from './CronJobHistoryDialog.vue'
 import ResourceYamlDialog from './ResourceYamlDialog.vue'
-import { useAuthStore, useK8sStore } from '@/stores'
 
 const authStore = useAuthStore()
 const k8sStore = useK8sStore()

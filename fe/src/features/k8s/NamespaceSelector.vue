@@ -16,9 +16,7 @@ onMounted(() => {
   k8sStore.fetchNamespaces()
 })
 
-const accessibleNamespaces = computed(() => {
-  return namespaces.value.filter((ns) => authStore.canReadNamespace(ns.name))
-})
+const accessibleNamespaces = computed(() => namespaces.value.filter((ns) => authStore.canReadNamespace(ns.name)))
 
 watch(accessibleNamespaces, (accessible) => {
   if (accessible.length > 0) {

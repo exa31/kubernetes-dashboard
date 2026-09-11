@@ -594,3 +594,47 @@ type SaveHPARequest struct {
 	TargetCPU    *int32 `json:"target_cpu,omitempty"`
 	TargetMemory *int32 `json:"target_memory,omitempty"`
 }
+
+// KedaHTTPScaledObjectDTO represents an HTTPScaledObject from http.keda.sh/v1alpha1
+type KedaHTTPScaledObjectDTO struct {
+	Name            string    `json:"name"`
+	Namespace       string    `json:"namespace"`
+	TargetWorkload  string    `json:"target_workload"` // e.g. "apps/v1/Deployment/be-chat-app"
+	TargetKind      string    `json:"target_kind"`     // "Deployment"
+	TargetName      string    `json:"target_name"`     // "be-chat-app"
+	TargetService   string    `json:"target_service"`  // "be-chat-app"
+	TargetPort      int32     `json:"target_port"`     // 8080
+	MinReplicas     int32     `json:"min_replicas"`    // can be 0 (Scale to Zero)
+	MaxReplicas     int32     `json:"max_replicas"`    // e.g. 3, 5
+	Concurrency     *int32    `json:"concurrency,omitempty"` // targetValue for concurrency (e.g. 30)
+	RequestRate     *int32    `json:"request_rate,omitempty"` // targetValue for rate (requests/sec)
+	ScaledownPeriod int32     `json:"scaledown_period"` // seconds (e.g. 300)
+	Hosts           []string  `json:"hosts,omitempty"`
+	Ready           bool      `json:"ready"`
+	Age             string    `json:"age"`
+	CreatedAt       time.Time `json:"created_at"`
+}
+
+// SaveKedaHTTPRequest payload to create or update an HTTPScaledObject
+type SaveKedaHTTPRequest struct {
+	Name            string   `json:"name,omitempty"`
+	Namespace       string   `json:"namespace" validate:"required"`
+	TargetKind      string   `json:"target_kind"` // "Deployment"
+	TargetName      string   `json:"target_name" validate:"required"`
+	TargetService   string   `json:"target_service,omitempty"`
+	TargetPort      int32    `json:"target_port,omitempty"`
+	MinReplicas     int32    `json:"min_replicas"` // 0 is allowed!
+	MaxReplicas     int32    `json:"max_replicas" validate:"required,min=1"`
+	Concurrency     *int32   `json:"concurrency,omitempty"`
+	RequestRate     *int32   `json:"request_rate,omitempty"`
+	ScaledownPeriod int32    `json:"scaledown_period,omitempty"`
+	Hosts           []string `json:"hosts,omitempty"`
+}
+
+// WorkloadAutoscalerDTO represents unified autoscaler info for a workload
+type WorkloadAutoscalerDTO struct {
+	Type     string                   `json:"type"` // "keda-http" | "keda" | "hpa" | "none"
+	KedaHTTP *KedaHTTPScaledObjectDTO `json:"keda_http,omitempty"`
+	HPA      *HPADetailDTO            `json:"hpa,omitempty"`
+}
+

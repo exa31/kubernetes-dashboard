@@ -175,6 +175,9 @@ func (r *Router) registerK8s(api fiber.Router) {
 	nsRead.Get("/hpas", handler.ListHPAs())
 	nsRead.Get("/hpas/:namespace/:name", handler.GetHPA())
 	nsRead.Get("/hpas/:namespace/workload/:kind/:name", handler.GetHPAForWorkload())
+	nsRead.Get("/autoscaling/workload/:namespace/:kind/:name", handler.GetWorkloadAutoscaler())
+	nsRead.Get("/autoscaling/keda-http", handler.ListKedaHTTPScaledObjects())
+	nsRead.Get("/autoscaling/keda-http/:namespace/workload/:kind/:name", handler.GetKedaHTTPForWorkload())
 
 	// DevOps & Admin Mutating Operations (RequireRole "admin", "devops" & Write namespace check)
 	devops := k8s.Group("", authMiddleware.RequireRole("admin", "devops"), authMiddleware.RequireNamespaceAccess(true))
@@ -199,6 +202,8 @@ func (r *Router) registerK8s(api fiber.Router) {
 	devops.Post("/daemonsets/:namespace/:name/restart", handler.RolloutRestartDaemonSet())
 	devops.Post("/hpas", handler.SaveHPA())
 	devops.Delete("/hpas/:namespace/:name", handler.DeleteHPA())
+	devops.Post("/autoscaling/keda-http", handler.SaveKedaHTTPScaledObject())
+	devops.Delete("/autoscaling/keda-http/:namespace/:name", handler.DeleteKedaHTTPScaledObject())
 
 	// Admin-Only Cluster Management (RequireRole "admin")
 	adminK8s := k8s.Group("", authMiddleware.RequireRole("admin"))

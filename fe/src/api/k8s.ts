@@ -4,11 +4,11 @@ import type {
   ConfigMapDetail,
   ConfigMapItem,
   CreateCronJobPayload,
+  CreateDeploymentPayload,
   CreateNamespacePayload,
   CronJobDetail,
   CronJobItem,
   DaemonSetItem,
-  CreateDeploymentPayload,
   DeploymentDetail,
   DeploymentItem,
   DeploymentRevision,
@@ -17,6 +17,7 @@ import type {
   HPAItem,
   IngressItem,
   JobItem,
+  KedaHTTPScaledObject,
   NamespaceItem,
   NodeItem,
   PodItem,
@@ -30,6 +31,7 @@ import type {
   RolloutRestartResponse,
   SaveConfigMapPayload,
   SaveHPAPayload,
+  SaveKedaHTTPPayload,
   SaveSecretPayload,
   SecretDetail,
   SecretItem,
@@ -38,7 +40,8 @@ import type {
   ServiceItem,
   StatefulSetItem,
   UpdateCronJobPayload,
-  UpdateDeploymentPayload
+  UpdateDeploymentPayload,
+  WorkloadAutoscaler
 } from '@/types'
 
 import { apiClient } from './client'
@@ -465,6 +468,58 @@ export const k8sApi = {
   deleteHPA: async (namespace: string, name: string): Promise<{ deleted: boolean }> => {
     const res = await apiClient.delete<{ data: { deleted: boolean } }>(
       `/k8s/hpas/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`
+    )
+    return res.data.data
+  },
+
+  getWorkloadAutoscaler: async (
+    namespace: string,
+    kind: string,
+    name: string
+  ): Promise<WorkloadAutoscaler> => {
+    const res = await apiClient.get<{ data: WorkloadAutoscaler }>(
+      `/k8s/autoscaling/workload/${encodeURIComponent(namespace)}/${encodeURIComponent(kind)}/${encodeURIComponent(name)}`
+    )
+    return res.data.data
+  },
+
+  listKedaHTTPScaledObjects: async (namespace?: string): Promise<KedaHTTPScaledObject[]> => {
+    const qs = namespace ? `?namespace=${encodeURIComponent(namespace)}` : ''
+    const res = await apiClient.get<{ data: KedaHTTPScaledObject[] }>(`/k8s/autoscaling/keda-http${qs}`)
+    return res.data.data ?? []
+  },
+
+  getKedaHTTPForWorkload: async (
+    namespace: string,
+    kind: string,
+    name: string
+  ): Promise<KedaHTTPScaledObject | null> => {
+    try {
+      const res = await apiClient.get<{ data: KedaHTTPScaledObject | null }>(
+        `/k8s/autoscaling/keda-http/${encodeURIComponent(namespace)}/workload/${encodeURIComponent(kind)}/${encodeURIComponent(name)}`
+      )
+      return res.data.data
+    } catch {
+      return null
+    }
+  },
+
+  saveKedaHTTPScaledObject: async (
+    payload: SaveKedaHTTPPayload
+  ): Promise<KedaHTTPScaledObject> => {
+    const res = await apiClient.post<{ data: KedaHTTPScaledObject }>(
+      '/k8s/autoscaling/keda-http',
+      payload
+    )
+    return res.data.data
+  },
+
+  deleteKedaHTTPScaledObject: async (
+    namespace: string,
+    name: string
+  ): Promise<{ deleted: boolean }> => {
+    const res = await apiClient.delete<{ data: { deleted: boolean } }>(
+      `/k8s/autoscaling/keda-http/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`
     )
     return res.data.data
   }
