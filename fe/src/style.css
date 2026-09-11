@@ -225,6 +225,19 @@
   border-color: #0ea5e9 !important;
 }
 
+.btn-cyan,
+.p-button.btn-cyan {
+  background-color: #0891b2 !important;
+  border-color: #0891b2 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+.btn-cyan:hover,
+.p-button.btn-cyan:hover {
+  background-color: #06b6d4 !important;
+  border-color: #06b6d4 !important;
+}
+
 .btn-amber,
 .p-button.btn-amber {
   background-color: #f59e0b !important;

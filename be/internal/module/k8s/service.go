@@ -15,14 +15,17 @@ import (
 	"golang/pkg/realtime"
 
 	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
@@ -817,8 +820,13 @@ func (s *K8sService) GetDeployment(ctx context.Context, namespace, name string) 
 			Annotations:   map[string]string{},
 			Containers: []ContainerDetailDTO{
 				{
-					Name:  name,
-					Image: "ghcr.io/eka-dev/chat-app-backend:latest",
+					Name:          name,
+					Image:         "ghcr.io/eka-dev/chat-app-backend:latest",
+					Port:          func() *int32 { p := int32(3000); return &p }(),
+					CPURequest:    "250m",
+					CPULimit:      "500m",
+					MemoryRequest: "256Mi",
+					MemoryLimit:   "512Mi",
 					Env: []ContainerEnvVarDTO{
 						{Name: "PORT", Value: "3000"},
 						{Name: "APP_ENV", Value: "production"},
@@ -878,11 +886,39 @@ func (s *K8sService) GetDeployment(ctx context.Context, namespace, name string) 
 			}
 		}
 
+		var cpuReq, cpuLim, memReq, memLim string
+		if c.Resources.Requests != nil {
+			if q, ok := c.Resources.Requests[corev1.ResourceCPU]; ok && !q.IsZero() {
+				cpuReq = q.String()
+			}
+			if q, ok := c.Resources.Requests[corev1.ResourceMemory]; ok && !q.IsZero() {
+				memReq = q.String()
+			}
+		}
+		if c.Resources.Limits != nil {
+			if q, ok := c.Resources.Limits[corev1.ResourceCPU]; ok && !q.IsZero() {
+				cpuLim = q.String()
+			}
+			if q, ok := c.Resources.Limits[corev1.ResourceMemory]; ok && !q.IsZero() {
+				memLim = q.String()
+			}
+		}
+		var port *int32
+		if len(c.Ports) > 0 {
+			p := c.Ports[0].ContainerPort
+			port = &p
+		}
+
 		containers = append(containers, ContainerDetailDTO{
-			Name:    c.Name,
-			Image:   c.Image,
-			Env:     envList,
-			EnvFrom: envFromList,
+			Name:          c.Name,
+			Image:         c.Image,
+			Port:          port,
+			CPURequest:    cpuReq,
+			CPULimit:      cpuLim,
+			MemoryRequest: memReq,
+			MemoryLimit:   memLim,
+			Env:           envList,
+			EnvFrom:       envFromList,
 		})
 	}
 
@@ -947,12 +983,71 @@ func (s *K8sService) UpdateDeployment(ctx context.Context, namespace, name strin
 					existing.Spec.Template.Spec.Containers[idx].Image = update.Image
 				}
 
+				if update.Port != nil && *update.Port > 0 {
+					existing.Spec.Template.Spec.Containers[idx].Ports = []corev1.ContainerPort{
+						{
+							Name:          "http",
+							ContainerPort: *update.Port,
+							Protocol:      corev1.ProtocolTCP,
+						},
+					}
+				}
+
+				if update.CPURequest != "" || update.CPULimit != "" || update.MemoryRequest != "" || update.MemoryLimit != "" {
+					if existing.Spec.Template.Spec.Containers[idx].Resources.Requests == nil {
+						existing.Spec.Template.Spec.Containers[idx].Resources.Requests = corev1.ResourceList{}
+					}
+					if existing.Spec.Template.Spec.Containers[idx].Resources.Limits == nil {
+						existing.Spec.Template.Spec.Containers[idx].Resources.Limits = corev1.ResourceList{}
+					}
+					if update.CPURequest != "" {
+						if q, err := resource.ParseQuantity(update.CPURequest); err == nil {
+							existing.Spec.Template.Spec.Containers[idx].Resources.Requests[corev1.ResourceCPU] = q
+						}
+					}
+					if update.MemoryRequest != "" {
+						if q, err := resource.ParseQuantity(update.MemoryRequest); err == nil {
+							existing.Spec.Template.Spec.Containers[idx].Resources.Requests[corev1.ResourceMemory] = q
+						}
+					}
+					if update.CPULimit != "" {
+						if q, err := resource.ParseQuantity(update.CPULimit); err == nil {
+							existing.Spec.Template.Spec.Containers[idx].Resources.Limits[corev1.ResourceCPU] = q
+						}
+					}
+					if update.MemoryLimit != "" {
+						if q, err := resource.ParseQuantity(update.MemoryLimit); err == nil {
+							existing.Spec.Template.Spec.Containers[idx].Resources.Limits[corev1.ResourceMemory] = q
+						}
+					}
+				}
+
 				// If env passed, update container env
 				if update.Env != nil {
 					newEnv := make([]corev1.EnvVar, 0, len(update.Env))
 					for _, envItem := range update.Env {
 						ev := corev1.EnvVar{Name: envItem.Name}
-						if envItem.Value != "" || (envItem.SecretRef == "" && envItem.ConfigRef == "") {
+						if envItem.SecretRef != "" {
+							parts := strings.SplitN(envItem.SecretRef, ":", 2)
+							if len(parts) == 2 {
+								ev.ValueFrom = &corev1.EnvVarSource{
+									SecretKeyRef: &corev1.SecretKeySelector{
+										LocalObjectReference: corev1.LocalObjectReference{Name: parts[0]},
+										Key:                  parts[1],
+									},
+								}
+							}
+						} else if envItem.ConfigRef != "" {
+							parts := strings.SplitN(envItem.ConfigRef, ":", 2)
+							if len(parts) == 2 {
+								ev.ValueFrom = &corev1.EnvVarSource{
+									ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+										LocalObjectReference: corev1.LocalObjectReference{Name: parts[0]},
+										Key:                  parts[1],
+									},
+								}
+							}
+						} else {
 							ev.Value = envItem.Value
 						}
 						newEnv = append(newEnv, ev)
@@ -975,6 +1070,218 @@ func (s *K8sService) UpdateDeployment(ctx context.Context, namespace, name strin
 	}
 
 	return s.GetDeployment(ctx, updated.Namespace, updated.Name)
+}
+
+// CreateDeployment deploys a workload in Google Cloud Run style (Deployment + optional Service + optional HPA).
+func (s *K8sService) CreateDeployment(ctx context.Context, req CreateDeploymentRequest) (*DeploymentDetailDTO, error) {
+	req.Name = strings.TrimSpace(req.Name)
+	req.Namespace = strings.TrimSpace(req.Namespace)
+	req.Image = strings.TrimSpace(req.Image)
+
+	if req.Namespace == "" {
+		req.Namespace = "default"
+	}
+	if req.Name == "" {
+		return nil, errors.BadRequest("Workload name is required")
+	}
+	if req.Image == "" {
+		return nil, errors.BadRequest("Container image is required")
+	}
+	if req.Replicas <= 0 {
+		req.Replicas = 1
+	}
+
+	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
+		containers := []ContainerDetailDTO{
+			{
+				Name:          req.Name,
+				Image:         req.Image,
+				Port:          req.Port,
+				CPURequest:    req.CPURequest,
+				CPULimit:      req.CPULimit,
+				MemoryRequest: req.MemoryRequest,
+				MemoryLimit:   req.MemoryLimit,
+				Env:           req.Env,
+			},
+		}
+		return &DeploymentDetailDTO{
+			Name:          req.Name,
+			Namespace:     req.Namespace,
+			Replicas:      req.Replicas,
+			ReadyReplicas: req.Replicas,
+			Labels:        map[string]string{"app": req.Name, "app.kubernetes.io/managed-by": "kubenexus"},
+			Annotations:   map[string]string{"kubenexus.io/deployment-style": "cloud-run"},
+			Containers:    containers,
+			CreatedAt:     time.Now(),
+			Age:           "just now",
+		}, nil
+	}
+
+	// Prepare container
+	container := corev1.Container{
+		Name:  req.Name,
+		Image: req.Image,
+	}
+
+	if req.Port != nil && *req.Port > 0 {
+		container.Ports = []corev1.ContainerPort{
+			{
+				Name:          "http",
+				ContainerPort: *req.Port,
+				Protocol:      corev1.ProtocolTCP,
+			},
+		}
+	}
+
+	// Resources
+	resReq := corev1.ResourceList{}
+	resLim := corev1.ResourceList{}
+	if req.CPURequest != "" {
+		if q, err := resource.ParseQuantity(req.CPURequest); err == nil {
+			resReq[corev1.ResourceCPU] = q
+		}
+	}
+	if req.MemoryRequest != "" {
+		if q, err := resource.ParseQuantity(req.MemoryRequest); err == nil {
+			resReq[corev1.ResourceMemory] = q
+		}
+	}
+	if req.CPULimit != "" {
+		if q, err := resource.ParseQuantity(req.CPULimit); err == nil {
+			resLim[corev1.ResourceCPU] = q
+		}
+	}
+	if req.MemoryLimit != "" {
+		if q, err := resource.ParseQuantity(req.MemoryLimit); err == nil {
+			resLim[corev1.ResourceMemory] = q
+		}
+	}
+	if len(resReq) > 0 || len(resLim) > 0 {
+		container.Resources = corev1.ResourceRequirements{
+			Requests: resReq,
+			Limits:   resLim,
+		}
+	}
+
+	// Environment variables
+	if len(req.Env) > 0 {
+		envList := make([]corev1.EnvVar, 0, len(req.Env))
+		for _, e := range req.Env {
+			ev := corev1.EnvVar{Name: e.Name}
+			if e.SecretRef != "" {
+				parts := strings.SplitN(e.SecretRef, ":", 2)
+				if len(parts) == 2 {
+					ev.ValueFrom = &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{Name: parts[0]},
+							Key:                  parts[1],
+						},
+					}
+				}
+			} else if e.ConfigRef != "" {
+				parts := strings.SplitN(e.ConfigRef, ":", 2)
+				if len(parts) == 2 {
+					ev.ValueFrom = &corev1.EnvVarSource{
+						ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{Name: parts[0]},
+							Key:                  parts[1],
+						},
+					}
+				}
+			} else {
+				ev.Value = e.Value
+			}
+			envList = append(envList, ev)
+		}
+		container.Env = envList
+	}
+
+	labels := map[string]string{
+		"app":                         req.Name,
+		"app.kubernetes.io/name":       req.Name,
+		"app.kubernetes.io/managed-by": "kubenexus",
+	}
+
+	dep := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        req.Name,
+			Namespace:   req.Namespace,
+			Labels:      labels,
+			Annotations: map[string]string{"kubenexus.io/deployment-style": "cloud-run"},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &req.Replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": req.Name},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{container},
+				},
+			},
+		},
+	}
+
+	_, err := s.clientMgr.Clientset.AppsV1().Deployments(req.Namespace).Create(ctx, dep, metav1.CreateOptions{})
+	if err != nil {
+		return nil, errors.InternalError("Failed to create deployment", err)
+	}
+
+	// Auto-expose Service if requested
+	if req.CreateService && req.Port != nil && *req.Port > 0 {
+		svcPort := *req.Port
+		if req.ServicePort != nil && *req.ServicePort > 0 {
+			svcPort = *req.ServicePort
+		}
+		svcType := corev1.ServiceTypeClusterIP
+		switch req.ServiceType {
+		case "NodePort":
+			svcType = corev1.ServiceTypeNodePort
+		case "LoadBalancer":
+			svcType = corev1.ServiceTypeLoadBalancer
+		}
+
+		svc := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      req.Name,
+				Namespace: req.Namespace,
+				Labels:    labels,
+			},
+			Spec: corev1.ServiceSpec{
+				Type:     svcType,
+				Selector: map[string]string{"app": req.Name},
+				Ports: []corev1.ServicePort{
+					{
+						Name:       "http",
+						Port:       svcPort,
+						TargetPort: intstr.FromInt(int(*req.Port)),
+						Protocol:   corev1.ProtocolTCP,
+					},
+				},
+			},
+		}
+		_, _ = s.clientMgr.Clientset.CoreV1().Services(req.Namespace).Create(ctx, svc, metav1.CreateOptions{})
+		s.BroadcastK8sChange("service", "created", req.Namespace, req.Name)
+	}
+
+	// Auto-create HPA if requested
+	if req.Autoscale != nil && req.Autoscale.MaxReplicas > 0 {
+		hpaReq := *req.Autoscale
+		hpaReq.Namespace = req.Namespace
+		hpaReq.TargetKind = "Deployment"
+		hpaReq.TargetName = req.Name
+		if hpaReq.Name == "" {
+			hpaReq.Name = req.Name + "-hpa"
+		}
+		_, _ = s.SaveHPA(ctx, hpaReq)
+	}
+
+	s.BroadcastK8sChange("deployment", "created", req.Namespace, req.Name)
+
+	return s.GetDeployment(ctx, req.Namespace, req.Name)
 }
 
 // GetDeploymentPods lists all active pods for a deployment using its label selector.
@@ -3361,5 +3668,341 @@ func (s *K8sService) ListClusterEvents(ctx context.Context, namespace, eventType
 
 	return events, nil
 }
+
+func hpaToItemDTO(hpa *autoscalingv2.HorizontalPodAutoscaler) HPAItemDTO {
+	minReplicas := int32(1)
+	if hpa.Spec.MinReplicas != nil {
+		minReplicas = *hpa.Spec.MinReplicas
+	}
+
+	var targetCPU, currentCPU *int32
+	var targetMemory, currentMemory *int32
+
+	for _, m := range hpa.Spec.Metrics {
+		if m.Type == autoscalingv2.ResourceMetricSourceType && m.Resource != nil {
+			if m.Resource.Name == corev1.ResourceCPU && m.Resource.Target.AverageUtilization != nil {
+				val := *m.Resource.Target.AverageUtilization
+				targetCPU = &val
+			} else if m.Resource.Name == corev1.ResourceMemory && m.Resource.Target.AverageUtilization != nil {
+				val := *m.Resource.Target.AverageUtilization
+				targetMemory = &val
+			}
+		}
+	}
+
+	for _, m := range hpa.Status.CurrentMetrics {
+		if m.Type == autoscalingv2.ResourceMetricSourceType && m.Resource != nil {
+			if m.Resource.Name == corev1.ResourceCPU && m.Resource.Current.AverageUtilization != nil {
+				val := *m.Resource.Current.AverageUtilization
+				currentCPU = &val
+			} else if m.Resource.Name == corev1.ResourceMemory && m.Resource.Current.AverageUtilization != nil {
+				val := *m.Resource.Current.AverageUtilization
+				currentMemory = &val
+			}
+		}
+	}
+
+	return HPAItemDTO{
+		Name:            hpa.Name,
+		Namespace:       hpa.Namespace,
+		TargetKind:      hpa.Spec.ScaleTargetRef.Kind,
+		TargetName:      hpa.Spec.ScaleTargetRef.Name,
+		MinReplicas:     minReplicas,
+		MaxReplicas:     hpa.Spec.MaxReplicas,
+		CurrentReplicas: hpa.Status.CurrentReplicas,
+		DesiredReplicas: hpa.Status.DesiredReplicas,
+		TargetCPU:       targetCPU,
+		CurrentCPU:      currentCPU,
+		TargetMemory:    targetMemory,
+		CurrentMemory:   currentMemory,
+		Age:             formatAge(hpa.CreationTimestamp.Time),
+		CreatedAt:       hpa.CreationTimestamp.Time,
+	}
+}
+
+func hpaToDetailDTO(hpa *autoscalingv2.HorizontalPodAutoscaler) HPADetailDTO {
+	item := hpaToItemDTO(hpa)
+	conditions := make([]HPAConditionDTO, 0, len(hpa.Status.Conditions))
+	for _, c := range hpa.Status.Conditions {
+		conditions = append(conditions, HPAConditionDTO{
+			Type:    string(c.Type),
+			Status:  string(c.Status),
+			Reason:  c.Reason,
+			Message: c.Message,
+		})
+	}
+
+	return HPADetailDTO{
+		Name:            item.Name,
+		Namespace:       item.Namespace,
+		TargetKind:      item.TargetKind,
+		TargetName:      item.TargetName,
+		MinReplicas:     item.MinReplicas,
+		MaxReplicas:     item.MaxReplicas,
+		CurrentReplicas: item.CurrentReplicas,
+		DesiredReplicas: item.DesiredReplicas,
+		TargetCPU:       item.TargetCPU,
+		CurrentCPU:      item.CurrentCPU,
+		TargetMemory:    item.TargetMemory,
+		CurrentMemory:   item.CurrentMemory,
+		Conditions:      conditions,
+		Labels:          hpa.Labels,
+		Annotations:     hpa.Annotations,
+		Age:             item.Age,
+		CreatedAt:       item.CreatedAt,
+	}
+}
+
+// ListHPAs lists all HorizontalPodAutoscalers in a namespace.
+func (s *K8sService) ListHPAs(ctx context.Context, namespace string) ([]HPAItemDTO, error) {
+	if namespace == "" || namespace == "_all" {
+		namespace = metav1.NamespaceAll
+	}
+
+	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
+		targetCPU := int32(80)
+		currentCPU := int32(35)
+		return []HPAItemDTO{
+			{
+				Name:            "be-chat-app-hpa",
+				Namespace:       namespace,
+				TargetKind:      "Deployment",
+				TargetName:      "be-chat-app",
+				MinReplicas:     1,
+				MaxReplicas:     5,
+				CurrentReplicas: 2,
+				DesiredReplicas: 2,
+				TargetCPU:       &targetCPU,
+				CurrentCPU:      &currentCPU,
+				Age:             "18d",
+				CreatedAt:       time.Now().Add(-18 * 24 * time.Hour),
+			},
+		}, nil
+	}
+
+	list, err := s.clientMgr.Clientset.AutoscalingV2().HorizontalPodAutoscalers(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.InternalError("Failed to list HPAs", err)
+	}
+
+	res := make([]HPAItemDTO, 0, len(list.Items))
+	for _, item := range list.Items {
+		res = append(res, hpaToItemDTO(&item))
+	}
+
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].Name < res[j].Name
+	})
+
+	return res, nil
+}
+
+// GetHPA fetches full details of an HPA by namespace and name.
+func (s *K8sService) GetHPA(ctx context.Context, namespace, name string) (*HPADetailDTO, error) {
+	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
+		targetCPU := int32(80)
+		currentCPU := int32(35)
+		return &HPADetailDTO{
+			Name:            name,
+			Namespace:       namespace,
+			TargetKind:      "Deployment",
+			TargetName:      "be-chat-app",
+			MinReplicas:     1,
+			MaxReplicas:     5,
+			CurrentReplicas: 2,
+			DesiredReplicas: 2,
+			TargetCPU:       &targetCPU,
+			CurrentCPU:      &currentCPU,
+			Conditions:      []HPAConditionDTO{},
+			Age:             "18d",
+			CreatedAt:       time.Now().Add(-18 * 24 * time.Hour),
+		}, nil
+	}
+
+	hpa, err := s.clientMgr.Clientset.AutoscalingV2().HorizontalPodAutoscalers(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil, errors.NotFound("HorizontalPodAutoscaler not found")
+		}
+		return nil, errors.InternalError("Failed to get HPA", err)
+	}
+
+	res := hpaToDetailDTO(hpa)
+	return &res, nil
+}
+
+// GetHPAForWorkload searches for an HPA targeting a specific workload (e.g. Deployment or StatefulSet).
+func (s *K8sService) GetHPAForWorkload(ctx context.Context, namespace, kind, name string) (*HPADetailDTO, error) {
+	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
+		if name == "be-chat-app" {
+			targetCPU := int32(80)
+			currentCPU := int32(35)
+			return &HPADetailDTO{
+				Name:            "be-chat-app-hpa",
+				Namespace:       namespace,
+				TargetKind:      "Deployment",
+				TargetName:      name,
+				MinReplicas:     1,
+				MaxReplicas:     5,
+				CurrentReplicas: 2,
+				DesiredReplicas: 2,
+				TargetCPU:       &targetCPU,
+				CurrentCPU:      &currentCPU,
+				Conditions:      []HPAConditionDTO{},
+				Age:             "18d",
+				CreatedAt:       time.Now().Add(-18 * 24 * time.Hour),
+			}, nil
+		}
+		return nil, nil
+	}
+
+	list, err := s.clientMgr.Clientset.AutoscalingV2().HorizontalPodAutoscalers(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.InternalError("Failed to list HPAs", err)
+	}
+
+	for _, item := range list.Items {
+		if item.Spec.ScaleTargetRef.Name == name {
+			if kind == "" || strings.EqualFold(item.Spec.ScaleTargetRef.Kind, kind) {
+				detail := hpaToDetailDTO(&item)
+				return &detail, nil
+			}
+		}
+	}
+
+	return nil, nil
+}
+
+// SaveHPA creates or updates a HorizontalPodAutoscaler with Min & Max replicas and target metrics.
+func (s *K8sService) SaveHPA(ctx context.Context, req SaveHPARequest) (*HPADetailDTO, error) {
+	if req.TargetKind == "" {
+		req.TargetKind = "Deployment"
+	}
+	name := req.Name
+	if name == "" {
+		name = fmt.Sprintf("%s-hpa", req.TargetName)
+	}
+	if req.MinReplicas < 1 {
+		req.MinReplicas = 1
+	}
+	if req.MaxReplicas < req.MinReplicas {
+		req.MaxReplicas = req.MinReplicas
+	}
+
+	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
+		s.BroadcastK8sChange("hpa", "saved", req.Namespace, name)
+		return &HPADetailDTO{
+			Name:            name,
+			Namespace:       req.Namespace,
+			TargetKind:      req.TargetKind,
+			TargetName:      req.TargetName,
+			MinReplicas:     req.MinReplicas,
+			MaxReplicas:     req.MaxReplicas,
+			CurrentReplicas: req.MinReplicas,
+			DesiredReplicas: req.MinReplicas,
+			TargetCPU:       req.TargetCPU,
+			TargetMemory:    req.TargetMemory,
+			Conditions:      []HPAConditionDTO{},
+			Age:             "0s",
+			CreatedAt:       time.Now(),
+		}, nil
+	}
+
+	var metrics []autoscalingv2.MetricSpec
+	if req.TargetCPU != nil && *req.TargetCPU > 0 {
+		metrics = append(metrics, autoscalingv2.MetricSpec{
+			Type: autoscalingv2.ResourceMetricSourceType,
+			Resource: &autoscalingv2.ResourceMetricSource{
+				Name: corev1.ResourceCPU,
+				Target: autoscalingv2.MetricTarget{
+					Type:               autoscalingv2.UtilizationMetricType,
+					AverageUtilization: req.TargetCPU,
+				},
+			},
+		})
+	}
+	if req.TargetMemory != nil && *req.TargetMemory > 0 {
+		metrics = append(metrics, autoscalingv2.MetricSpec{
+			Type: autoscalingv2.ResourceMetricSourceType,
+			Resource: &autoscalingv2.ResourceMetricSource{
+				Name: corev1.ResourceMemory,
+				Target: autoscalingv2.MetricTarget{
+					Type:               autoscalingv2.UtilizationMetricType,
+					AverageUtilization: req.TargetMemory,
+				},
+			},
+		})
+	}
+
+	hpaClient := s.clientMgr.Clientset.AutoscalingV2().HorizontalPodAutoscalers(req.Namespace)
+	existing, err := hpaClient.Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			newHPA := &autoscalingv2.HorizontalPodAutoscaler{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: req.Namespace,
+					Labels: map[string]string{
+						"app.kubernetes.io/managed-by": "kubenexus",
+					},
+				},
+				Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
+					ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
+						APIVersion: "apps/v1",
+						Kind:       req.TargetKind,
+						Name:       req.TargetName,
+					},
+					MinReplicas: &req.MinReplicas,
+					MaxReplicas: req.MaxReplicas,
+					Metrics:     metrics,
+				},
+			}
+			created, createErr := hpaClient.Create(ctx, newHPA, metav1.CreateOptions{})
+			if createErr != nil {
+				return nil, errors.InternalError("Failed to create HPA", createErr)
+			}
+			s.BroadcastK8sChange("hpa", "created", req.Namespace, name)
+			res := hpaToDetailDTO(created)
+			return &res, nil
+		}
+		return nil, errors.InternalError("Failed to check existing HPA", err)
+	}
+
+	// Update existing
+	existing.Spec.ScaleTargetRef = autoscalingv2.CrossVersionObjectReference{
+		APIVersion: "apps/v1",
+		Kind:       req.TargetKind,
+		Name:       req.TargetName,
+	}
+	existing.Spec.MinReplicas = &req.MinReplicas
+	existing.Spec.MaxReplicas = req.MaxReplicas
+	existing.Spec.Metrics = metrics
+
+	updated, updateErr := hpaClient.Update(ctx, existing, metav1.UpdateOptions{})
+	if updateErr != nil {
+		return nil, errors.InternalError("Failed to update HPA", updateErr)
+	}
+
+	s.BroadcastK8sChange("hpa", "updated", req.Namespace, name)
+	res := hpaToDetailDTO(updated)
+	return &res, nil
+}
+
+// DeleteHPA deletes an HPA by name in the specified namespace.
+func (s *K8sService) DeleteHPA(ctx context.Context, namespace, name string) error {
+	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
+		s.BroadcastK8sChange("hpa", "deleted", namespace, name)
+		return nil
+	}
+
+	err := s.clientMgr.Clientset.AutoscalingV2().HorizontalPodAutoscalers(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return errors.InternalError("Failed to delete HPA", err)
+	}
+
+	s.BroadcastK8sChange("hpa", "deleted", namespace, name)
+	return nil
+}
+
 
 

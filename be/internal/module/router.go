@@ -172,6 +172,9 @@ func (r *Router) registerK8s(api fiber.Router) {
 	nsRead.Get("/resource-yaml", handler.GetResourceYAML())
 	nsRead.Get("/metrics/pods", handler.GetPodMetrics())
 	nsRead.Get("/resource-quotas", handler.GetResourceQuotas())
+	nsRead.Get("/hpas", handler.ListHPAs())
+	nsRead.Get("/hpas/:namespace/:name", handler.GetHPA())
+	nsRead.Get("/hpas/:namespace/workload/:kind/:name", handler.GetHPAForWorkload())
 
 	// DevOps & Admin Mutating Operations (RequireRole "admin", "devops" & Write namespace check)
 	devops := k8s.Group("", authMiddleware.RequireRole("admin", "devops"), authMiddleware.RequireNamespaceAccess(true))
@@ -179,6 +182,7 @@ func (r *Router) registerK8s(api fiber.Router) {
 	devops.Delete("/secrets/:namespace/:name", handler.DeleteSecret())
 	devops.Post("/configmaps", handler.SaveConfigMap())
 	devops.Delete("/configmaps/:namespace/:name", handler.DeleteConfigMap())
+	devops.Post("/deployments", handler.CreateDeployment())
 	devops.Put("/deployments/:namespace/:name", handler.UpdateDeployment())
 	devops.Put("/deployments/:namespace/:name/scale", handler.ScaleDeployment())
 	devops.Post("/deployments/:namespace/:name/restart", handler.RolloutRestartDeployment())
@@ -193,6 +197,8 @@ func (r *Router) registerK8s(api fiber.Router) {
 	devops.Put("/statefulsets/:namespace/:name/scale", handler.ScaleStatefulSet())
 	devops.Post("/statefulsets/:namespace/:name/restart", handler.RolloutRestartStatefulSet())
 	devops.Post("/daemonsets/:namespace/:name/restart", handler.RolloutRestartDaemonSet())
+	devops.Post("/hpas", handler.SaveHPA())
+	devops.Delete("/hpas/:namespace/:name", handler.DeleteHPA())
 
 	// Admin-Only Cluster Management (RequireRole "admin")
 	adminK8s := k8s.Group("", authMiddleware.RequireRole("admin"))

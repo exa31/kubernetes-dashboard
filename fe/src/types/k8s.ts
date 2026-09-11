@@ -130,8 +130,30 @@ export interface ContainerEnvFrom {
 export interface ContainerDetail {
   name: string
   image: string
+  port?: number
+  cpu_request?: string
+  cpu_limit?: string
+  memory_request?: string
+  memory_limit?: string
   env: ContainerEnvVar[]
-  env_from: ContainerEnvFrom[]
+  env_from?: ContainerEnvFrom[]
+}
+
+export interface CreateDeploymentPayload {
+  name: string
+  namespace: string
+  image: string
+  replicas: number
+  port?: number
+  cpu_request?: string
+  cpu_limit?: string
+  memory_request?: string
+  memory_limit?: string
+  env?: ContainerEnvVar[]
+  create_service?: boolean
+  service_type?: string
+  service_port?: number
+  autoscale?: SaveHPAPayload
 }
 
 export interface DeploymentDetail {
@@ -441,4 +463,59 @@ export interface ResourceQuotaItem {
   pods_used: string
   age: string
   created_at: string
+}
+
+export interface HPACondition {
+  type: string
+  status: string
+  reason?: string
+  message?: string
+}
+
+export interface HPAItem {
+  name: string
+  namespace: string
+  target_kind: string
+  target_name: string
+  min_replicas: number
+  max_replicas: number
+  current_replicas: number
+  desired_replicas: number
+  target_cpu?: number
+  current_cpu?: number
+  target_memory?: number
+  current_memory?: number
+  age: string
+  created_at: string
+}
+
+export interface HPADetail {
+  name: string
+  namespace: string
+  target_kind: string
+  target_name: string
+  min_replicas: number
+  max_replicas: number
+  current_replicas: number
+  desired_replicas: number
+  target_cpu?: number
+  current_cpu?: number
+  target_memory?: number
+  current_memory?: number
+  conditions: HPACondition[]
+  labels?: Record<string, string>
+  annotations?: Record<string, string>
+  age: string
+  created_at: string
+}
+
+export interface SaveHPAPayload {
+  name?: string
+  namespace: string
+  target_kind?: string
+  target_name: string
+  min_replicas: number
+  max_replicas: number
+  target_cpu?: number
+  target_memory?: number
 }

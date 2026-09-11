@@ -151,10 +151,33 @@ type ContainerEnvFromDTO struct {
 
 // ContainerDetailDTO represents a container inside a pod or deployment.
 type ContainerDetailDTO struct {
-	Name    string                `json:"name"`
-	Image   string                `json:"image"`
-	Env     []ContainerEnvVarDTO  `json:"env"`
-	EnvFrom []ContainerEnvFromDTO `json:"env_from"`
+	Name          string                `json:"name"`
+	Image         string                `json:"image"`
+	Port          *int32                `json:"port,omitempty"`
+	CPURequest    string                `json:"cpu_request,omitempty"`
+	CPULimit      string                `json:"cpu_limit,omitempty"`
+	MemoryRequest string                `json:"memory_request,omitempty"`
+	MemoryLimit   string                `json:"memory_limit,omitempty"`
+	Env           []ContainerEnvVarDTO  `json:"env"`
+	EnvFrom       []ContainerEnvFromDTO `json:"env_from"`
+}
+
+// CreateDeploymentRequest holds payload for deploying a workload in Cloud Run style.
+type CreateDeploymentRequest struct {
+	Name          string               `json:"name" validate:"required"`
+	Namespace     string               `json:"namespace" validate:"required"`
+	Image         string               `json:"image" validate:"required"`
+	Replicas      int32                `json:"replicas"`
+	Port          *int32               `json:"port,omitempty"`
+	CPURequest    string               `json:"cpu_request,omitempty"`
+	CPULimit      string               `json:"cpu_limit,omitempty"`
+	MemoryRequest string               `json:"memory_request,omitempty"`
+	MemoryLimit   string               `json:"memory_limit,omitempty"`
+	Env           []ContainerEnvVarDTO `json:"env,omitempty"`
+	CreateService bool                 `json:"create_service"`
+	ServiceType   string               `json:"service_type,omitempty"` // "ClusterIP", "NodePort", "LoadBalancer"
+	ServicePort   *int32               `json:"service_port,omitempty"`
+	Autoscale     *SaveHPARequest      `json:"autoscale,omitempty"`
 }
 
 // DeploymentDetailDTO holds full deployment configuration.
@@ -513,4 +536,61 @@ type ResourceQuotaItemDTO struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+// HPAConditionDTO represents a status condition of an HPA.
+type HPAConditionDTO struct {
+	Type    string `json:"type"`
+	Status  string `json:"status"`
+	Reason  string `json:"reason"`
+	Message string `json:"message"`
+}
 
+// HPAItemDTO represents a summary of a HorizontalPodAutoscaler.
+type HPAItemDTO struct {
+	Name            string    `json:"name"`
+	Namespace       string    `json:"namespace"`
+	TargetKind      string    `json:"target_kind"`
+	TargetName      string    `json:"target_name"`
+	MinReplicas     int32     `json:"min_replicas"`
+	MaxReplicas     int32     `json:"max_replicas"`
+	CurrentReplicas int32     `json:"current_replicas"`
+	DesiredReplicas int32     `json:"desired_replicas"`
+	TargetCPU       *int32    `json:"target_cpu,omitempty"`
+	CurrentCPU      *int32    `json:"current_cpu,omitempty"`
+	TargetMemory    *int32    `json:"target_memory,omitempty"`
+	CurrentMemory   *int32    `json:"current_memory,omitempty"`
+	Age             string    `json:"age"`
+	CreatedAt       time.Time `json:"created_at"`
+}
+
+// HPADetailDTO represents the full details of a HorizontalPodAutoscaler.
+type HPADetailDTO struct {
+	Name            string            `json:"name"`
+	Namespace       string            `json:"namespace"`
+	TargetKind      string            `json:"target_kind"`
+	TargetName      string            `json:"target_name"`
+	MinReplicas     int32             `json:"min_replicas"`
+	MaxReplicas     int32             `json:"max_replicas"`
+	CurrentReplicas int32             `json:"current_replicas"`
+	DesiredReplicas int32             `json:"desired_replicas"`
+	TargetCPU       *int32            `json:"target_cpu,omitempty"`
+	CurrentCPU      *int32            `json:"current_cpu,omitempty"`
+	TargetMemory    *int32            `json:"target_memory,omitempty"`
+	CurrentMemory   *int32            `json:"current_memory,omitempty"`
+	Conditions      []HPAConditionDTO `json:"conditions"`
+	Labels          map[string]string `json:"labels,omitempty"`
+	Annotations     map[string]string `json:"annotations,omitempty"`
+	Age             string            `json:"age"`
+	CreatedAt       time.Time         `json:"created_at"`
+}
+
+// SaveHPARequest represents the payload to create or update an HPA.
+type SaveHPARequest struct {
+	Name         string `json:"name"`
+	Namespace    string `json:"namespace" validate:"required"`
+	TargetKind   string `json:"target_kind"` // e.g. "Deployment" or "StatefulSet"
+	TargetName   string `json:"target_name" validate:"required"`
+	MinReplicas  int32  `json:"min_replicas" validate:"required,min=1"`
+	MaxReplicas  int32  `json:"max_replicas" validate:"required,min=1"`
+	TargetCPU    *int32 `json:"target_cpu,omitempty"`
+	TargetMemory *int32 `json:"target_memory,omitempty"`
+}

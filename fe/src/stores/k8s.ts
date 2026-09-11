@@ -12,10 +12,13 @@ import type {
   CronJobDetail,
   CronJobItem,
   DaemonSetItem,
+  CreateDeploymentPayload,
   DeploymentDetail,
   DeploymentItem,
   DeploymentRevision,
   EventItem,
+  HPADetail,
+  HPAItem,
   IngressItem,
   JobItem,
   NamespaceItem,
@@ -27,9 +30,10 @@ import type {
   PVItem,
   ResourceQuotaItem,
   ResourceYAMLResponse,
-  RolloutRestartResponse,
   RollbackDeploymentResponse,
+  RolloutRestartResponse,
   SaveConfigMapPayload,
+  SaveHPAPayload,
   SaveSecretPayload,
   SecretDetail,
   SecretItem,
@@ -55,6 +59,7 @@ export const useK8sStore = defineStore('k8s', () => {
   const services = ref<ServiceItem[]>([])
   const ingresses = ref<IngressItem[]>([])
   const cronjobs = ref<CronJobItem[]>([])
+  const hpas = ref<HPAItem[]>([])
   const events = ref<EventItem[]>([])
   const pvcs = ref<PVCItem[]>([])
   const pvs = ref<PVItem[]>([])
@@ -185,6 +190,17 @@ export const useK8sStore = defineStore('k8s', () => {
     }
   }
 
+  async function fetchHPAs(ns: string = selectedNamespace.value) {
+    isLoading.value = true
+    try {
+      hpas.value = await k8sApi.getHPAs(ns)
+    } catch (err: unknown) {
+      logger.error('Failed to fetch HPAs', err)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function fetchAllResources(ns: string = selectedNamespace.value) {
     isLoading.value = true
     error.value = null
@@ -199,6 +215,7 @@ export const useK8sStore = defineStore('k8s', () => {
         fetchServices(ns),
         fetchIngresses(ns),
         fetchCronJobs(ns),
+        fetchHPAs(ns),
         fetchClusterInfo(),
         fetchClusterOverview()
       ])
@@ -443,6 +460,17 @@ export const useK8sStore = defineStore('k8s', () => {
     return await k8sApi.getDeploymentDetail(ns, name)
   }
 
+  async function createDeployment(payload: CreateDeploymentPayload): Promise<DeploymentDetail> {
+    isActionLoading.value = true
+    try {
+      const res = await k8sApi.createDeployment(payload)
+      await fetchDeployments(payload.namespace || selectedNamespace.value)
+      return res
+    } finally {
+      isActionLoading.value = false
+    }
+  }
+
   async function updateDeployment(
     name: string,
     payload: UpdateDeploymentPayload,
@@ -658,6 +686,43 @@ export const useK8sStore = defineStore('k8s', () => {
     }
   }
 
+  async function getHPA(name: string, ns: string = selectedNamespace.value): Promise<HPADetail> {
+    return await k8sApi.getHPA(ns, name)
+  }
+
+  async function getHPAForWorkload(
+    name: string,
+    kind: string = 'Deployment',
+    ns: string = selectedNamespace.value
+  ): Promise<HPADetail | null> {
+    return await k8sApi.getHPAForWorkload(ns, kind, name)
+  }
+
+  async function saveHPA(payload: SaveHPAPayload): Promise<HPADetail> {
+    isActionLoading.value = true
+    try {
+      const res = await k8sApi.saveHPA(payload)
+      await fetchHPAs(payload.namespace)
+      return res
+    } finally {
+      isActionLoading.value = false
+    }
+  }
+
+  async function deleteHPA(
+    name: string,
+    ns: string = selectedNamespace.value
+  ): Promise<{ deleted: boolean }> {
+    isActionLoading.value = true
+    try {
+      const res = await k8sApi.deleteHPA(ns, name)
+      await fetchHPAs(ns)
+      return res
+    } finally {
+      isActionLoading.value = false
+    }
+  }
+
   return {
     clusterInfo,
     clusterOverview,
@@ -676,6 +741,7 @@ export const useK8sStore = defineStore('k8s', () => {
     services,
     ingresses,
     cronjobs,
+    hpas,
     events,
     pvcs,
     pvs,
@@ -701,6 +767,11 @@ export const useK8sStore = defineStore('k8s', () => {
     fetchServices,
     fetchIngresses,
     fetchCronJobs,
+    fetchHPAs,
+    getHPA,
+    getHPAForWorkload,
+    saveHPA,
+    deleteHPA,
     fetchEvents,
     fetchPVCs,
     fetchPVs,
@@ -715,6 +786,7 @@ export const useK8sStore = defineStore('k8s', () => {
     getDeploymentHistory,
     rollbackDeployment,
     getDeploymentDetail,
+    createDeployment,
     updateDeployment,
     scaleDeployment,
     getDeploymentPods,

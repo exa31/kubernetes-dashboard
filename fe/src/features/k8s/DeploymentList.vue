@@ -12,13 +12,15 @@ import { useToast } from 'primevue/usetoast'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useK8sRealtime } from '@/composables'
+import DeployWorkloadDialog from '@/features/k8s/DeployWorkloadDialog.vue'
 import DeploymentEditorDialog from '@/features/k8s/DeploymentEditorDialog.vue'
 import DeploymentRollbackDialog from '@/features/k8s/DeploymentRollbackDialog.vue'
+import HpaScaleDialog from '@/features/k8s/HpaScaleDialog.vue'
 import PodLogsDialog from '@/features/k8s/PodLogsDialog.vue'
 import ResourceYamlDialog from '@/features/k8s/ResourceYamlDialog.vue'
 import WebTerminalDialog from '@/features/k8s/WebTerminalDialog.vue'
 import { useAuthStore, useK8sStore } from '@/stores'
-import type { DaemonSetItem, DeploymentItem, PodItem, StatefulSetItem } from '@/types'
+import type { DaemonSetItem, DeploymentItem, HPAItem, PodItem, StatefulSetItem } from '@/types'
 
 const authStore = useAuthStore()
 const k8sStore = useK8sStore()
@@ -29,6 +31,7 @@ const {
   statefulsets,
   daemonsets,
   pods,
+  hpas,
   podMetrics,
   selectedNamespace,
   isLoading,
@@ -37,18 +40,30 @@ const {
 
 const canMutate = computed(() => authStore.canMutateNamespace(selectedNamespace.value))
 
-// Active tab: deployments | statefulsets | daemonsets | pods
-const activeTab = ref<'deployments' | 'statefulsets' | 'daemonsets' | 'pods'>('deployments')
+// Active tab: deployments | statefulsets | daemonsets | pods | hpas
+const activeTab = ref<'deployments' | 'statefulsets' | 'daemonsets' | 'pods' | 'hpas'>('deployments')
 
 const searchQuery = ref('')
 const restartNotification = ref<{ title: string; message: string } | null>(null)
 
 // Dialog states
+const isDeployOpen = ref(false)
 const isLogsOpen = ref(false)
 const isEditorOpen = ref(false)
 const isTerminalOpen = ref(false)
 const isYamlOpen = ref(false)
 const isRollbackOpen = ref(false)
+const isHpaScaleOpen = ref(false)
+
+const selectedHpaTarget = ref<{
+  name: string
+  kind: 'Deployment' | 'StatefulSet'
+  currentReplicas: number
+}>({
+  name: '',
+  kind: 'Deployment',
+  currentReplicas: 1
+})
 
 const selectedDeploymentName = ref('')
 const selectedPod = ref<PodItem | null>(null)
@@ -87,6 +102,9 @@ function refreshActiveWorkload() {
       break
     case 'daemonsets':
       k8sStore.fetchDaemonSets()
+      break
+    case 'hpas':
+      k8sStore.fetchHPAs()
       break
   }
 }
@@ -144,6 +162,7 @@ function fetchAllWorkloads() {
   k8sStore.fetchDaemonSets()
   k8sStore.fetchPods()
   k8sStore.fetchPodMetrics()
+  k8sStore.fetchHPAs()
 }
 
 // Quick scale for deployments
@@ -245,6 +264,63 @@ const filteredPods = computed(() => {
       (p.ip && p.ip.includes(q))
   )
 })
+
+const filteredHPAs = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return hpas.value
+  return hpas.value.filter(
+    (h) =>
+      h.name.toLowerCase().includes(q) ||
+      h.target_name.toLowerCase().includes(q) ||
+      h.target_kind.toLowerCase().includes(q)
+  )
+})
+
+const hpaMap = computed<Record<string, HPAItem>>(() => {
+  const map: Record<string, HPAItem> = {}
+  for (const h of hpas.value) {
+    map[`${h.target_kind}/${h.target_name}`] = h
+    map[h.target_name] = h
+  }
+  return map
+})
+
+function openHpaScale(
+  name: string,
+  kind: 'Deployment' | 'StatefulSet' = 'Deployment',
+  currentReplicas: number = 1
+) {
+  selectedHpaTarget.value = { name, kind, currentReplicas }
+  isHpaScaleOpen.value = true
+}
+
+function deleteHpaItem(item: HPAItem) {
+  confirm.require({
+    message: `Are you sure you want to remove autoscaling for '${item.name}' (${item.target_kind} ${item.target_name})?`,
+    header: 'Delete HorizontalPodAutoscaler',
+    icon: 'pi pi-exclamation-triangle',
+    acceptClass: 'p-button-danger text-xs font-semibold',
+    rejectClass: 'p-button-secondary text-xs',
+    accept: async () => {
+      try {
+        await k8sStore.deleteHPA(item.name, item.namespace)
+        toast.add({
+          severity: 'success',
+          summary: 'Autoscaler Removed',
+          detail: `HPA '${item.name}' deleted successfully`,
+          life: 3000
+        })
+      } catch (err: unknown) {
+        toast.add({
+          severity: 'error',
+          summary: 'Delete HPA Failed',
+          detail: err instanceof Error ? err.message : 'Unknown error',
+          life: 5000
+        })
+      }
+    }
+  })
+}
 
 // Dialog openers
 const openLogsForDeployment = (item: DeploymentItem) => {
@@ -469,9 +545,18 @@ function getPhaseColor(phase: string, reason?: string) {
       </div>
 
       <div class="flex items-center gap-2">
+        <Button
+          v-if="canMutate"
+          label="Deploy Workload"
+          icon="pi pi-cloud-upload"
+          size="small"
+          class="btn-sky text-xs font-semibold shadow-md cursor-pointer px-3 py-1.5"
+          @click="isDeployOpen = true"
+        />
+
         <button
           type="button"
-          class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5"
+          class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5 cursor-pointer"
           :disabled="isLoading"
           @click="fetchAllWorkloads"
         >
@@ -590,6 +675,23 @@ function getPhaseColor(phase: string, reason?: string) {
           {{ pods.length }}
         </span>
       </button>
+
+      <button
+        type="button"
+        class="px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 cursor-pointer"
+        :class="
+          activeTab === 'hpas'
+            ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 shadow-sm'
+            : 'text-slate-600 dark:text-slate-400 hover:text-white hover:bg-slate-800/40'
+        "
+        @click="activeTab = 'hpas'"
+      >
+        <i class="pi pi-sliders-h text-xs"></i>
+        <span>Autoscalers (HPA)</span>
+        <span class="px-1.5 py-0.2 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-300">
+          {{ hpas.length }}
+        </span>
+      </button>
     </div>
 
     <!-- Search & Live Sync Toolbar -->
@@ -643,9 +745,9 @@ function getPhaseColor(phase: string, reason?: string) {
           class="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700/60 text-xs"
         >
           <button
-            type="button"
             v-for="sec in [5, 10, 30, 0]"
             :key="sec"
+            type="button"
             class="px-2 py-1 rounded-lg text-[11px] font-mono transition font-medium cursor-pointer"
             :class="
               autoRefreshInterval === sec
@@ -703,11 +805,11 @@ function getPhaseColor(phase: string, reason?: string) {
         </Column>
 
         <!-- Replicas & Quick Scale -->
-        <Column field="ready_replicas" header="Replicas" sortable style="min-width: 10rem">
+        <Column field="ready_replicas" header="Replicas" sortable style="min-width: 14rem">
           <template #body="{ data }">
             <div class="flex items-center gap-2">
               <span
-                class="px-2 py-0.5 rounded text-xs font-mono font-bold"
+                class="px-2 py-0.5 rounded text-xs font-mono font-bold shrink-0"
                 :class="
                   data.ready_replicas === data.replicas
                     ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
@@ -717,9 +819,20 @@ function getPhaseColor(phase: string, reason?: string) {
                 {{ data.ready_replicas }}/{{ data.replicas }}
               </span>
 
+              <!-- HPA badge if active -->
+              <span
+                v-if="hpaMap[data.name]"
+                class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center gap-1 cursor-pointer hover:bg-cyan-500/20 transition shrink-0"
+                title="Autoscaling active: click to manage max/min scaling"
+                @click="openHpaScale(data.name, 'Deployment', data.replicas)"
+              >
+                <i class="pi pi-sliders-h text-[9px]"></i>
+                <span>{{ hpaMap[data.name].min_replicas }}-{{ hpaMap[data.name].max_replicas }}</span>
+              </span>
+
               <!-- Quick scale buttons -->
               <div
-                class="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-lg border border-slate-700"
+                class="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-lg border border-slate-700 shrink-0"
               >
                 <button
                   type="button"
@@ -786,7 +899,7 @@ function getPhaseColor(phase: string, reason?: string) {
         </Column>
 
         <!-- Actions -->
-        <Column header="Actions" align-frozen="right" style="min-width: 22rem; text-align: right">
+        <Column header="Actions" align-frozen="right" style="min-width: 27rem; text-align: right">
           <template #body="{ data }">
             <div class="flex items-center justify-end gap-1.5">
               <!-- Logs -->
@@ -807,6 +920,19 @@ function getPhaseColor(phase: string, reason?: string) {
                 class="btn-purple text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer"
                 title="Inspect & Edit YAML"
                 @click="openYamlModal('Deployment', data.name)"
+              />
+
+              <!-- Autoscale / HPA -->
+              <Button
+                label="Scale"
+                icon="pi pi-sliders-h"
+                size="small"
+                class="btn-cyan text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                :disabled="!canMutate"
+                :title="
+                  !canMutate ? 'Read-only: cannot scale deployment' : 'Configure Max/Min Autoscaling (HPA)'
+                "
+                @click="openHpaScale(data.name, 'Deployment', data.replicas)"
               />
 
               <!-- Edit -->
@@ -889,11 +1015,11 @@ function getPhaseColor(phase: string, reason?: string) {
           </template>
         </Column>
 
-        <Column field="ready_replicas" header="Replicas" sortable style="min-width: 10rem">
+        <Column field="ready_replicas" header="Replicas" sortable style="min-width: 14rem">
           <template #body="{ data }">
             <div class="flex items-center gap-2">
               <span
-                class="px-2 py-0.5 rounded text-xs font-mono font-bold"
+                class="px-2 py-0.5 rounded text-xs font-mono font-bold shrink-0"
                 :class="
                   data.ready_replicas === data.replicas
                     ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
@@ -903,24 +1029,35 @@ function getPhaseColor(phase: string, reason?: string) {
                 {{ data.ready_replicas }}/{{ data.replicas }}
               </span>
 
+              <!-- HPA badge if active -->
+              <span
+                v-if="hpaMap[data.name]"
+                class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center gap-1 cursor-pointer hover:bg-cyan-500/20 transition shrink-0"
+                title="Autoscaling active: click to manage max/min scaling"
+                @click="openHpaScale(data.name, 'StatefulSet', data.replicas)"
+              >
+                <i class="pi pi-sliders-h text-[9px]"></i>
+                <span>{{ hpaMap[data.name].min_replicas }}-{{ hpaMap[data.name].max_replicas }}</span>
+              </span>
+
               <!-- Quick scale -->
               <div
-                class="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-lg border border-slate-700"
+                class="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-lg border border-slate-700 shrink-0"
               >
                 <button
                   type="button"
-                  class="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition text-[10px] disabled:opacity-30"
-                  :disabled="isScaling[data.name] || data.replicas <= 0"
-                  title="Scale down (-1)"
+                  class="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition text-[10px] disabled:opacity-30 disabled:cursor-not-allowed"
+                  :disabled="!canMutate || isScaling[data.name] || data.replicas <= 0"
+                  :title="!canMutate ? 'Read-only: insufficient permissions' : 'Scale down (-1)'"
                   @click="quickScaleStatefulSet(data, data.replicas - 1)"
                 >
                   <i class="pi pi-minus"></i>
                 </button>
                 <button
                   type="button"
-                  class="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition text-[10px] disabled:opacity-30"
-                  :disabled="isScaling[data.name]"
-                  title="Scale up (+1)"
+                  class="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition text-[10px] disabled:opacity-30 disabled:cursor-not-allowed"
+                  :disabled="!canMutate || isScaling[data.name]"
+                  :title="!canMutate ? 'Read-only: insufficient permissions' : 'Scale up (+1)'"
                   @click="quickScaleStatefulSet(data, data.replicas + 1)"
                 >
                   <i class="pi pi-plus"></i>
@@ -946,7 +1083,7 @@ function getPhaseColor(phase: string, reason?: string) {
           </template>
         </Column>
 
-        <Column header="Actions" align-frozen="right" style="min-width: 14rem; text-align: right">
+        <Column header="Actions" align-frozen="right" style="min-width: 19rem; text-align: right">
           <template #body="{ data }">
             <div class="flex items-center justify-end gap-1.5">
               <Button
@@ -956,6 +1093,21 @@ function getPhaseColor(phase: string, reason?: string) {
                 class="btn-purple text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer"
                 title="Inspect & Edit YAML"
                 @click="openYamlModal('StatefulSet', data.name)"
+              />
+
+              <!-- Autoscale / HPA -->
+              <Button
+                label="Scale"
+                icon="pi pi-sliders-h"
+                size="small"
+                class="btn-cyan text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                :disabled="!canMutate"
+                :title="
+                  !canMutate
+                    ? 'Read-only: cannot scale statefulset'
+                    : 'Configure Max/Min Autoscaling (HPA)'
+                "
+                @click="openHpaScale(data.name, 'StatefulSet', data.replicas)"
               />
 
               <Button
@@ -1289,6 +1441,158 @@ function getPhaseColor(phase: string, reason?: string) {
       </DataTable>
     </div>
 
+    <!-- TAB 5: Autoscalers (HPA) -->
+    <div
+      v-if="activeTab === 'hpas'"
+      class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl bg-white dark:bg-slate-900/90"
+    >
+      <DataTable
+        :value="filteredHPAs"
+        :loading="isLoading"
+        responsive-layout="scroll"
+        class="p-datatable-sm"
+      >
+        <!-- HPA Name & Target -->
+        <Column field="name" header="Autoscaler / Target Workload" sortable style="min-width: 16rem">
+          <template #body="{ data }">
+            <div class="flex items-center gap-2.5">
+              <div
+                class="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0"
+              >
+                <i class="pi pi-sliders-h text-sm"></i>
+              </div>
+              <div>
+                <div class="font-bold text-slate-900 dark:text-slate-100 text-xs font-mono">
+                  {{ data.name }}
+                </div>
+                <div class="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5 font-mono">
+                  <span>Target:</span>
+                  <span class="px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 font-semibold text-[10px]">
+                    {{ data.target_kind }}/{{ data.target_name }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </template>
+        </Column>
+
+        <!-- Min & Max Boundaries -->
+        <Column header="Scaling Range (Min - Max)" style="min-width: 14rem">
+          <template #body="{ data }">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span
+                  class="px-2 py-0.5 rounded text-xs font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30"
+                >
+                  {{ data.min_replicas }} - {{ data.max_replicas }} Pods
+                </span>
+                <span class="text-[11px] text-slate-400 font-mono">
+                  (Current: <b class="text-white">{{ data.current_replicas }}</b>)
+                </span>
+              </div>
+              <div class="w-36 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div
+                  class="h-full bg-cyan-500 rounded-full transition-all"
+                  :style="{
+                    width: `${Math.min(100, Math.max(10, (data.current_replicas / (data.max_replicas || 1)) * 100))}%`
+                  }"
+                ></div>
+              </div>
+            </div>
+          </template>
+        </Column>
+
+        <!-- Metrics Targets & Current -->
+        <Column header="Target vs Current Metrics" style="min-width: 16rem">
+          <template #body="{ data }">
+            <div class="space-y-1 text-xs font-mono">
+              <div v-if="data.target_cpu" class="flex items-center gap-2">
+                <span class="text-[11px] text-slate-400">CPU:</span>
+                <span
+                  class="font-semibold"
+                  :class="
+                    data.current_cpu && data.current_cpu > data.target_cpu
+                      ? 'text-amber-400'
+                      : 'text-emerald-400'
+                  "
+                >
+                  {{ data.current_cpu !== undefined ? `${data.current_cpu}%` : 'N/A' }}
+                </span>
+                <span class="text-slate-500">/</span>
+                <span class="text-slate-300">{{ data.target_cpu }}% target</span>
+              </div>
+              <div v-if="data.target_memory" class="flex items-center gap-2">
+                <span class="text-[11px] text-slate-400">Mem:</span>
+                <span class="font-semibold text-emerald-400">
+                  {{ data.current_memory !== undefined ? `${data.current_memory}%` : 'N/A' }}
+                </span>
+                <span class="text-slate-500">/</span>
+                <span class="text-slate-300">{{ data.target_memory }}% target</span>
+              </div>
+              <div v-if="!data.target_cpu && !data.target_memory" class="text-slate-500 text-[11px]">
+                No resource metrics configured
+              </div>
+            </div>
+          </template>
+        </Column>
+
+        <!-- Age -->
+        <Column field="age" header="Age" sortable style="min-width: 6rem">
+          <template #body="{ data }">
+            <span class="text-xs text-slate-400 font-mono">{{ data.age }}</span>
+          </template>
+        </Column>
+
+        <!-- Actions -->
+        <Column header="Actions" align-frozen="right" style="min-width: 14rem; text-align: right">
+          <template #body="{ data }">
+            <div class="flex items-center justify-end gap-1.5">
+              <!-- Configure Scaling -->
+              <Button
+                label="Configure"
+                icon="pi pi-sliders-h"
+                size="small"
+                class="btn-cyan text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                :disabled="!canMutate"
+                title="Configure Max/Min Scaling"
+                @click="openHpaScale(data.target_name, data.target_kind || 'Deployment', data.current_replicas)"
+              />
+
+              <!-- YAML -->
+              <Button
+                label="YAML"
+                icon="pi pi-code"
+                size="small"
+                class="btn-purple text-xs px-2.5 py-1.5 rounded-lg active:scale-95 cursor-pointer"
+                title="View HPA YAML"
+                @click="openYamlModal('HorizontalPodAutoscaler', data.name)"
+              />
+
+              <!-- Delete HPA -->
+              <Button
+                icon="pi pi-trash"
+                size="small"
+                class="btn-rose text-xs px-2 py-1.5 rounded-lg active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                :disabled="!canMutate"
+                title="Delete HPA (Disable Autoscaling)"
+                @click="deleteHpaItem(data)"
+              />
+            </div>
+          </template>
+        </Column>
+
+        <template #empty>
+          <div class="py-12 text-center text-slate-400">
+            <i class="pi pi-sliders-h text-3xl mb-2 text-slate-500"></i>
+            <h3 class="font-semibold text-slate-200">No Autoscalers (HPA) Configured</h3>
+            <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+              There are no HorizontalPodAutoscalers in {{ selectedNamespace }}. You can enable Max/Min autoscaling from any Deployment or StatefulSet row by clicking <strong>Scale</strong>.
+            </p>
+          </div>
+        </template>
+      </DataTable>
+    </div>
+
     <!-- Modals -->
     <!-- Pod Logs Dialog Modal -->
     <PodLogsDialog
@@ -1329,6 +1633,34 @@ function getPhaseColor(phase: string, reason?: string) {
       :name="selectedYamlResource.name"
       :namespace="selectedYamlResource.namespace"
       @applied="fetchAllWorkloads"
+    />
+
+    <!-- HPA Max/Min Scale Dialog Modal -->
+    <HpaScaleDialog
+      v-model:visible="isHpaScaleOpen"
+      :workload-name="selectedHpaTarget.name"
+      :workload-kind="selectedHpaTarget.kind"
+      :namespace="selectedNamespace"
+      :current-replicas="selectedHpaTarget.currentReplicas"
+      @saved="fetchAllWorkloads"
+    />
+
+    <!-- Cloud Run Style Deploy Workload Dialog -->
+    <DeployWorkloadDialog
+      v-model:visible="isDeployOpen"
+      :namespace="selectedNamespace"
+      @deployed="
+        (name) => {
+          showNotification(name, `Workload '${name}' deployed successfully!`)
+          toast.add({
+            severity: 'success',
+            summary: 'Workload Deployed',
+            detail: `Workload '${name}' deployed successfully in Cloud Run style.`,
+            life: 4000
+          })
+          fetchAllWorkloads()
+        }
+      "
     />
   </div>
 </template>

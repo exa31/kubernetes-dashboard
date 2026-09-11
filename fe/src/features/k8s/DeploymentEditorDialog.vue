@@ -10,6 +10,8 @@ import { useK8sStore } from '@/stores'
 import type { ContainerDetail, DeploymentDetail } from '@/types'
 import { logger } from '@/utils'
 
+import HpaScaleDialog from './HpaScaleDialog.vue'
+
 const props = defineProps<{
   visible: boolean
   deploymentName: string
@@ -28,6 +30,7 @@ const replicas = ref<number>(1)
 const containers = ref<ContainerDetail[]>([])
 const isLoading = ref<boolean>(false)
 const isSaving = ref<boolean>(false)
+const isHpaOpen = ref<boolean>(false)
 const statusMessage = ref<{ text: string; severity: 'success' | 'error' } | null>(null)
 
 async function loadDeployment() {
@@ -71,6 +74,13 @@ function addEnvVar(containerIndex: number) {
 
 function removeEnvVar(containerIndex: number, envIndex: number) {
   containers.value[containerIndex].env.splice(envIndex, 1)
+}
+
+function applyContainerTier(c: ContainerDetail, cpuLim: string, memLim: string) {
+  c.cpu_limit = cpuLim
+  c.cpu_request = cpuLim.endsWith('m') ? `${Math.max(50, parseInt(cpuLim) / 2)}m` : '250m'
+  c.memory_limit = memLim
+  c.memory_request = memLim.endsWith('Gi') ? '512Mi' : '128Mi'
 }
 
 async function saveChanges() {
@@ -171,23 +181,39 @@ function closeDialog() {
         <div
           class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm"
         >
-          <label
-            class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
-          >
-            Pod Replicas (Scaling)
-          </label>
-          <div class="flex items-center gap-3 mt-2">
-            <InputNumber
-              v-model="replicas"
-              show-buttons
-              button-layout="horizontal"
-              :min="0"
-              :max="100"
-              class="w-48 font-mono text-sm"
-            />
-            <span class="text-xs text-slate-500"
-              >Currently {{ deployment?.ready_replicas ?? 0 }} ready pods</span
-            >
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <label
+                class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
+              >
+                Pod Replicas (Manual Scaling)
+              </label>
+              <div class="flex items-center gap-3 mt-2">
+                <InputNumber
+                  v-model="replicas"
+                  show-buttons
+                  button-layout="horizontal"
+                  :min="0"
+                  :max="100"
+                  class="w-48 font-mono text-sm"
+                />
+                <span class="text-xs text-slate-500"
+                  >Currently {{ deployment?.ready_replicas ?? 0 }} ready pods</span
+                >
+              </div>
+            </div>
+
+            <div class="pt-2 sm:pt-0">
+              <Button
+                label="Configure Max/Min Autoscaling (HPA)"
+                icon="pi pi-sliders-h"
+                size="small"
+                outlined
+                severity="info"
+                class="text-xs font-mono"
+                @click="isHpaOpen = true"
+              />
+            </div>
           </div>
         </div>
 
@@ -220,6 +246,95 @@ function closeDialog() {
               placeholder="e.g. nginx:alpine or ghcr.io/..."
               class="w-full font-mono text-xs py-2"
             />
+          </div>
+
+          <!-- Container Port -->
+          <div>
+            <label
+              class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
+            >
+              Container Port
+            </label>
+            <InputNumber
+              v-model="c.port"
+              placeholder="e.g. 80 or 8080"
+              :min="1"
+              :max="65535"
+              class="w-48 font-mono text-xs"
+            />
+          </div>
+
+          <!-- Capacity & Hardware Allocation (Cloud Run Tiers) -->
+          <div
+            class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-3"
+          >
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span
+                class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5"
+              >
+                <i class="pi pi-bolt text-amber-500"></i>
+                <span>Capacity Allocation (CPU & Memory)</span>
+              </span>
+              <div class="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  class="px-2 py-0.5 rounded text-[10px] font-mono border border-slate-300 dark:border-slate-700 hover:border-sky-500 cursor-pointer bg-white dark:bg-slate-900"
+                  @click="applyContainerTier(c, '250m', '256Mi')"
+                >
+                  0.25 CPU / 256Mi
+                </button>
+                <button
+                  type="button"
+                  class="px-2 py-0.5 rounded text-[10px] font-mono border border-slate-300 dark:border-slate-700 hover:border-sky-500 cursor-pointer bg-white dark:bg-slate-900"
+                  @click="applyContainerTier(c, '500m', '512Mi')"
+                >
+                  0.5 CPU / 512Mi
+                </button>
+                <button
+                  type="button"
+                  class="px-2 py-0.5 rounded text-[10px] font-mono border border-slate-300 dark:border-slate-700 hover:border-sky-500 cursor-pointer bg-white dark:bg-slate-900"
+                  @click="applyContainerTier(c, '1000m', '1Gi')"
+                >
+                  1.0 CPU / 1Gi
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <!-- CPU -->
+              <div class="space-y-1">
+                <span class="text-[11px] font-medium text-slate-500">CPU (Request / Limit)</span>
+                <div class="grid grid-cols-2 gap-2">
+                  <InputText
+                    v-model="c.cpu_request"
+                    placeholder="Req e.g. 100m"
+                    class="font-mono text-xs py-1.5"
+                  />
+                  <InputText
+                    v-model="c.cpu_limit"
+                    placeholder="Lim e.g. 500m"
+                    class="font-mono text-xs py-1.5"
+                  />
+                </div>
+              </div>
+
+              <!-- Memory -->
+              <div class="space-y-1">
+                <span class="text-[11px] font-medium text-slate-500">Memory (Request / Limit)</span>
+                <div class="grid grid-cols-2 gap-2">
+                  <InputText
+                    v-model="c.memory_request"
+                    placeholder="Req e.g. 128Mi"
+                    class="font-mono text-xs py-1.5"
+                  />
+                  <InputText
+                    v-model="c.memory_limit"
+                    placeholder="Lim e.g. 512Mi"
+                    class="font-mono text-xs py-1.5"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Container Environment Variables -->
@@ -313,6 +428,16 @@ function closeDialog() {
       />
     </div>
   </Dialog>
+
+  <!-- HPA Max/Min Scale Dialog -->
+  <HpaScaleDialog
+    v-model:visible="isHpaOpen"
+    :workload-name="props.deploymentName"
+    workload-kind="Deployment"
+    :namespace="props.namespace"
+    :current-replicas="replicas"
+    @saved="loadDeployment"
+  />
 </template>
 
 <style scoped></style>

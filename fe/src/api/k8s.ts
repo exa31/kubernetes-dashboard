@@ -8,10 +8,13 @@ import type {
   CronJobDetail,
   CronJobItem,
   DaemonSetItem,
+  CreateDeploymentPayload,
   DeploymentDetail,
   DeploymentItem,
   DeploymentRevision,
   EventItem,
+  HPADetail,
+  HPAItem,
   IngressItem,
   JobItem,
   NamespaceItem,
@@ -23,9 +26,10 @@ import type {
   PVItem,
   ResourceQuotaItem,
   ResourceYAMLResponse,
-  RolloutRestartResponse,
   RollbackDeploymentResponse,
+  RolloutRestartResponse,
   SaveConfigMapPayload,
+  SaveHPAPayload,
   SaveSecretPayload,
   SecretDetail,
   SecretItem,
@@ -139,6 +143,11 @@ export const k8sApi = {
     const res = await apiClient.get<{ data: DeploymentDetail }>(
       `/k8s/deployments/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`
     )
+    return res.data.data
+  },
+
+  createDeployment: async (payload: CreateDeploymentPayload): Promise<DeploymentDetail> => {
+    const res = await apiClient.post<{ data: DeploymentDetail }>('/k8s/deployments', payload)
     return res.data.data
   },
 
@@ -418,6 +427,46 @@ export const k8sApi = {
     const qs = params.toString() ? `?${params.toString()}` : ''
     const res = await apiClient.get<{ data: EventItem[] }>(`/k8s/events/feed${qs}`)
     return res.data.data ?? []
+  },
+
+  getHPAs: async (namespace?: string): Promise<HPAItem[]> => {
+    const qs = namespace ? `?namespace=${encodeURIComponent(namespace)}` : ''
+    const res = await apiClient.get<{ data: HPAItem[] }>(`/k8s/hpas${qs}`)
+    return res.data.data ?? []
+  },
+
+  getHPA: async (namespace: string, name: string): Promise<HPADetail> => {
+    const res = await apiClient.get<{ data: HPADetail }>(
+      `/k8s/hpas/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`
+    )
+    return res.data.data
+  },
+
+  getHPAForWorkload: async (
+    namespace: string,
+    kind: string,
+    name: string
+  ): Promise<HPADetail | null> => {
+    try {
+      const res = await apiClient.get<{ data: HPADetail | null }>(
+        `/k8s/hpas/${encodeURIComponent(namespace)}/workload/${encodeURIComponent(kind)}/${encodeURIComponent(name)}`
+      )
+      return res.data.data
+    } catch {
+      return null
+    }
+  },
+
+  saveHPA: async (payload: SaveHPAPayload): Promise<HPADetail> => {
+    const res = await apiClient.post<{ data: HPADetail }>('/k8s/hpas', payload)
+    return res.data.data
+  },
+
+  deleteHPA: async (namespace: string, name: string): Promise<{ deleted: boolean }> => {
+    const res = await apiClient.delete<{ data: { deleted: boolean } }>(
+      `/k8s/hpas/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`
+    )
+    return res.data.data
   }
 }
 

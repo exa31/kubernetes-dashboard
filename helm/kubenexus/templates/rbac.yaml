@@ -68,6 +68,13 @@ rules:
       - ingressclasses
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
+  # Autoscaling API (HPA - Horizontal Pod Autoscalers)
+  - apiGroups: ["autoscaling"]
+    resources:
+      - horizontalpodautoscalers
+      - horizontalpodautoscalers/status
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
   # Metrics API (Metrics Server)
   - apiGroups: ["metrics.k8s.io"]
     resources:

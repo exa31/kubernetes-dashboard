@@ -243,6 +243,26 @@ func (h *K8sHandler) GetDeployment() fiber.Handler {
 	}
 }
 
+// CreateDeployment handles POST /api/v1/k8s/deployments.
+func (h *K8sHandler) CreateDeployment() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var req CreateDeploymentRequest
+		if err := c.BodyParser(&req); err != nil {
+			return errors.BadRequest("Invalid JSON body")
+		}
+
+		if req.Name == "" || req.Image == "" {
+			return errors.BadRequest("Workload name and container image are required")
+		}
+
+		created, err := h.service.CreateDeployment(c.Context(), req)
+		if err != nil {
+			return err
+		}
+		return response.SuccessResponse(c, created, "Workload deployed successfully")
+	}
+}
+
 // UpdateDeployment handles PUT /api/v1/k8s/deployments/:namespace/:name.
 func (h *K8sHandler) UpdateDeployment() fiber.Handler {
 	return func(c *fiber.Ctx) error {
@@ -766,5 +786,79 @@ func (h *K8sHandler) ListClusterEvents() fiber.Handler {
 	}
 }
 
+// ListHPAs handles GET /api/v1/k8s/hpas.
+func (h *K8sHandler) ListHPAs() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		namespace := c.Query("namespace")
+		hpas, err := h.service.ListHPAs(c.Context(), namespace)
+		if err != nil {
+			return err
+		}
+		return response.SuccessResponse(c, hpas, "HorizontalPodAutoscalers retrieved successfully")
+	}
+}
 
+// GetHPA handles GET /api/v1/k8s/hpas/:namespace/:name.
+func (h *K8sHandler) GetHPA() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		namespace := c.Params("namespace")
+		name := c.Params("name")
+		hpa, err := h.service.GetHPA(c.Context(), namespace, name)
+		if err != nil {
+			return err
+		}
+		return response.SuccessResponse(c, hpa, "HorizontalPodAutoscaler retrieved successfully")
+	}
+}
 
+// GetHPAForWorkload handles GET /api/v1/k8s/hpas/:namespace/workload/:kind/:name.
+func (h *K8sHandler) GetHPAForWorkload() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		namespace := c.Params("namespace")
+		kind := c.Params("kind")
+		name := c.Params("name")
+		hpa, err := h.service.GetHPAForWorkload(c.Context(), namespace, kind, name)
+		if err != nil {
+			return err
+		}
+		return response.SuccessResponse(c, hpa, "HPA for workload retrieved successfully")
+	}
+}
+
+// SaveHPA handles POST /api/v1/k8s/hpas.
+func (h *K8sHandler) SaveHPA() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var req SaveHPARequest
+		if err := c.BodyParser(&req); err != nil {
+			return errors.BadRequest("Invalid JSON body")
+		}
+		if req.Namespace == "" || req.TargetName == "" {
+			return errors.BadRequest("Namespace and target_name are required")
+		}
+		if req.MinReplicas < 1 {
+			req.MinReplicas = 1
+		}
+		if req.MaxReplicas < req.MinReplicas {
+			return errors.BadRequest("max_replicas must be greater than or equal to min_replicas")
+		}
+
+		hpa, err := h.service.SaveHPA(c.Context(), req)
+		if err != nil {
+			return err
+		}
+		return response.SuccessResponse(c, hpa, "HorizontalPodAutoscaler saved successfully")
+	}
+}
+
+// DeleteHPA handles DELETE /api/v1/k8s/hpas/:namespace/:name.
+func (h *K8sHandler) DeleteHPA() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		namespace := c.Params("namespace")
+		name := c.Params("name")
+		err := h.service.DeleteHPA(c.Context(), namespace, name)
+		if err != nil {
+			return err
+		}
+		return response.SuccessResponse(c, fiber.Map{"deleted": true, "name": name, "namespace": namespace}, "HorizontalPodAutoscaler deleted successfully")
+	}
+}
