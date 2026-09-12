@@ -81,7 +81,7 @@ func (s *K8sService) GetClusterInfo(ctx context.Context) (*ClusterInfoDTO, error
 	}
 
 	// Server Version
-	if ver, err := s.clientMgr.Clientset.DiscoveryClient.ServerVersion(); err == nil {
+	if ver, err := s.clientMgr.Clientset.Discovery().ServerVersion(); err == nil {
 		info.ServerVersion = ver.GitVersion
 	}
 

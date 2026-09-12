@@ -17,7 +17,7 @@ import (
 
 // ClientManager manages connection to the Kubernetes cluster.
 type ClientManager struct {
-	Clientset     *kubernetes.Clientset
+	Clientset     kubernetes.Interface
 	DynamicClient dynamic.Interface
 	RESTMapper    *restmapper.DeferredDiscoveryRESTMapper
 	Config        *rest.Config
