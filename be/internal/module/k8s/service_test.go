@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestK8sService_OfflineDemoMode(t *testing.T) {
+func TestK8sService_OfflineReturnsErrors(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	clientMgr := &ClientManager{
 		Connected: false,
@@ -16,77 +16,39 @@ func TestK8sService_OfflineDemoMode(t *testing.T) {
 	svc := NewK8sService(clientMgr)
 	ctx := context.Background()
 
-	// 1. Cluster info
+	// 1. Cluster info should return not connected error
 	info, err := svc.GetClusterInfo(ctx)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if info.Connected {
-		t.Errorf("expected disconnected in demo mode")
+	if err == nil {
+		t.Fatalf("expected error when disconnected, got nil with info: %+v", info)
 	}
 
-	// 2. Namespaces
-	nsList, err := svc.ListNamespaces(ctx)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if len(nsList) == 0 {
-		t.Fatalf("expected at least 1 demo namespace")
+	// 2. Namespaces should return error
+	_, err = svc.ListNamespaces(ctx)
+	if err == nil {
+		t.Fatal("expected error listing namespaces when disconnected")
 	}
 
-	// 3. Secrets
-	secrets, err := svc.ListSecrets(ctx, "dev-coffe")
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if len(secrets) == 0 {
-		t.Fatalf("expected secrets in dev-coffe")
+	// 3. Secrets should return error
+	_, err = svc.ListSecrets(ctx, "default")
+	if err == nil {
+		t.Fatal("expected error listing secrets when disconnected")
 	}
 
-	// 4. Get Secret & auto-decoded plaintext data
-	detail, err := svc.GetSecret(ctx, "dev-coffe", "be-chat-app-env")
-	if err != nil {
-		t.Fatalf("expected no error getting secret, got %v", err)
-	}
-	if detail.Data["APP_NAME"] != "Chat-App" {
-		t.Errorf("expected decoded APP_NAME to be 'Chat-App', got '%s'", detail.Data["APP_NAME"])
-	}
-	if detail.Data["DATABASE_HOST"] != "103.150.226.122" {
-		t.Errorf("expected decoded DATABASE_HOST to be '103.150.226.122', got '%s'", detail.Data["DATABASE_HOST"])
+	// 4. Get Secret should return error
+	_, err = svc.GetSecret(ctx, "default", "test-secret")
+	if err == nil {
+		t.Fatal("expected error getting secret when disconnected")
 	}
 
-	// 5. Save Secret
-	detail.Data["APP_VERSION"] = "2.0.0"
-	saved, err := svc.SaveSecret(ctx, &SaveSecretRequest{
-		Name:      detail.Name,
-		Namespace: detail.Namespace,
-		Type:      detail.Type,
-		Data:      detail.Data,
-	})
-	if err != nil {
-		t.Fatalf("expected no error saving secret, got %v", err)
-	}
-	if saved.Data["APP_VERSION"] != "2.0.0" {
-		t.Errorf("expected APP_VERSION to be updated to '2.0.0'")
+	// 5. Deployments should return error
+	_, err = svc.ListDeployments(ctx, "default")
+	if err == nil {
+		t.Fatal("expected error listing deployments when disconnected")
 	}
 
-	// 6. Rollout Revision History & Rollback
-	history, err := svc.GetDeploymentHistory(ctx, "dev-coffe", "be-chat-app")
-	if err != nil {
-		t.Fatalf("expected no error getting deployment history, got %v", err)
-	}
-	if len(history) == 0 {
-		t.Fatalf("expected at least 1 revision in history")
-	}
-	if history[0].Revision != 3 || !history[0].IsCurrent {
-		t.Errorf("expected latest revision 3 to be current")
-	}
-
-	rbRes, err := svc.RollbackDeployment(ctx, "dev-coffe", "be-chat-app", 2)
-	if err != nil {
-		t.Fatalf("expected no error rolling back deployment, got %v", err)
-	}
-	if rbRes.ToRevision != 2 {
-		t.Errorf("expected rolled back to revision 2, got %d", rbRes.ToRevision)
+	// 6. Pods should return error
+	_, err = svc.ListPods(ctx, "default")
+	if err == nil {
+		t.Fatal("expected error listing pods when disconnected")
 	}
 }

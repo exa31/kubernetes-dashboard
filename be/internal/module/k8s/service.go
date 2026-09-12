@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"golang/pkg/errors"
+	
 	"golang/pkg/realtime"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -70,16 +71,7 @@ func (s *K8sService) BroadcastK8sChange(resource, action, namespace, name string
 // GetClusterInfo returns cluster metadata and resource counts.
 func (s *K8sService) GetClusterInfo(ctx context.Context) (*ClusterInfoDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return &ClusterInfoDTO{
-			Connected:       false,
-			Endpoint:        "offline (demo mode)",
-			ServerVersion:   "v1.32.0-simulated",
-			CurrentContext:  "demo-context",
-			NamespaceCount:  3,
-			SecretCount:     12,
-			ConfigMapCount:  8,
-			DeploymentCount: 5,
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	info := &ClusterInfoDTO{
@@ -104,11 +96,7 @@ func (s *K8sService) GetClusterInfo(ctx context.Context) (*ClusterInfoDTO, error
 // ListNamespaces lists all cluster namespaces.
 func (s *K8sService) ListNamespaces(ctx context.Context) ([]NamespaceDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return []NamespaceDTO{
-			{Name: "dev-coffe", Status: "Active", CreatedAt: time.Now().Add(-300 * 24 * time.Hour), Age: "300d"},
-			{Name: "default", Status: "Active", CreatedAt: time.Now().Add(-315 * 24 * time.Hour), Age: "315d"},
-			{Name: "kube-system", Status: "Active", CreatedAt: time.Now().Add(-315 * 24 * time.Hour), Age: "315d"},
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	list, err := s.clientMgr.Clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
@@ -140,7 +128,7 @@ func (s *K8sService) ListSecrets(ctx context.Context, namespace string) ([]Secre
 	}
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return getMockSecrets(namespace), nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	list, err := s.clientMgr.Clientset.CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{})
@@ -177,7 +165,7 @@ func (s *K8sService) ListSecrets(ctx context.Context, namespace string) ([]Secre
 // GetSecret fetches a secret and decodes all base64 values to plaintext.
 func (s *K8sService) GetSecret(ctx context.Context, namespace, name string) (*SecretDetailDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return getMockSecretDetail(namespace, name)
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	secret, err := s.clientMgr.Clientset.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -220,17 +208,7 @@ func (s *K8sService) SaveSecret(ctx context.Context, req *SaveSecretRequest) (*S
 	}
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return &SecretDetailDTO{
-			Name:            req.Name,
-			Namespace:       req.Namespace,
-			Type:            req.Type,
-			Data:            req.Data,
-			Labels:          req.Labels,
-			Annotations:     req.Annotations,
-			ResourceVersion: "1",
-			UID:             "simulated-uid",
-			CreatedAt:       time.Now(),
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	// Check if secret exists
@@ -298,7 +276,7 @@ func (s *K8sService) ListConfigMaps(ctx context.Context, namespace string) ([]Co
 	}
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return getMockConfigMaps(namespace), nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	list, err := s.clientMgr.Clientset.CoreV1().ConfigMaps(namespace).List(ctx, metav1.ListOptions{})
@@ -334,7 +312,7 @@ func (s *K8sService) ListConfigMaps(ctx context.Context, namespace string) ([]Co
 // GetConfigMap fetches a configmap.
 func (s *K8sService) GetConfigMap(ctx context.Context, namespace, name string) (*ConfigMapDetailDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return getMockConfigMapDetail(namespace, name)
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	cm, err := s.clientMgr.Clientset.CoreV1().ConfigMaps(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -364,16 +342,7 @@ func (s *K8sService) SaveConfigMap(ctx context.Context, req *SaveConfigMapReques
 	}
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return &ConfigMapDetailDTO{
-			Name:            req.Name,
-			Namespace:       req.Namespace,
-			Data:            req.Data,
-			Labels:          req.Labels,
-			Annotations:     req.Annotations,
-			ResourceVersion: "1",
-			UID:             "simulated-cm-uid",
-			CreatedAt:       time.Now(),
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	existing, err := s.clientMgr.Clientset.CoreV1().ConfigMaps(req.Namespace).Get(ctx, req.Name, metav1.GetOptions{})
@@ -431,19 +400,7 @@ func (s *K8sService) ListDeployments(ctx context.Context, namespace string) ([]D
 	}
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return []DeploymentItemDTO{
-			{
-				Name:          "be-chat-app",
-				Namespace:     namespace,
-				Replicas:      2,
-				ReadyReplicas: 2,
-				Images:        []string{"ghcr.io/eka-dev/chat-app-backend:latest"},
-				EnvSecrets:    []string{"be-chat-app-env"},
-				EnvConfigMaps: []string{},
-				CreatedAt:     time.Now().Add(-18 * 24 * time.Hour),
-				Age:           "18d",
-			},
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	list, err := s.clientMgr.Clientset.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{})
@@ -520,12 +477,7 @@ func (s *K8sService) RolloutRestartDeployment(ctx context.Context, namespace, na
 	restartTime := time.Now().Format(time.RFC3339)
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return &RolloutRestartResponse{
-			Message:    "Simulated rollout restart triggered successfully",
-			Deployment: name,
-			Namespace:  namespace,
-			RestartAt:  restartTime,
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	dep, err := s.clientMgr.Clientset.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -561,40 +513,7 @@ func (s *K8sService) GetDeploymentHistory(ctx context.Context, namespace, name s
 	}
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		// Mock history for simulation / demo mode
-		now := time.Now()
-		return []DeploymentRevisionDTO{
-			{
-				Revision:    3,
-				ReplicaSet:  fmt.Sprintf("%s-7df54cf75c", name),
-				Images:      []string{"ghcr.io/eka-dev/chat-app-backend:v1.2.0"},
-				ChangeCause: "Update container image to v1.2.0",
-				Replicas:    2,
-				CreatedAt:   now.Add(-2 * time.Hour),
-				Age:         formatAge(now.Add(-2 * time.Hour)),
-				IsCurrent:   true,
-			},
-			{
-				Revision:    2,
-				ReplicaSet:  fmt.Sprintf("%s-5c8bd94f86", name),
-				Images:      []string{"ghcr.io/eka-dev/chat-app-backend:v1.1.0"},
-				ChangeCause: "Bump backend version to v1.1.0",
-				Replicas:    0,
-				CreatedAt:   now.Add(-24 * time.Hour),
-				Age:         formatAge(now.Add(-24 * time.Hour)),
-				IsCurrent:   false,
-			},
-			{
-				Revision:    1,
-				ReplicaSet:  fmt.Sprintf("%s-68489cfbc6", name),
-				Images:      []string{"ghcr.io/eka-dev/chat-app-backend:v1.0.0"},
-				ChangeCause: "Initial deployment release",
-				Replicas:    0,
-				CreatedAt:   now.Add(-7 * 24 * time.Hour),
-				Age:         formatAge(now.Add(-7 * 24 * time.Hour)),
-				IsCurrent:   false,
-			},
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	dep, err := s.clientMgr.Clientset.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -677,16 +596,7 @@ func (s *K8sService) RollbackDeployment(ctx context.Context, namespace, name str
 	}
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		targetRev := toRevision
-		if targetRev <= 0 {
-			targetRev = 2 // simulate rolling back from 3 to 2 in demo mode
-		}
-		return &RollbackDeploymentResponse{
-			Message:    fmt.Sprintf("Simulated rollback of deployment '%s' to revision %d triggered successfully", name, targetRev),
-			Deployment: name,
-			Namespace:  namespace,
-			ToRevision: targetRev,
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	dep, err := s.clientMgr.Clientset.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -811,34 +721,7 @@ func (s *K8sService) GetDeployment(ctx context.Context, namespace, name string) 
 	}
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return &DeploymentDetailDTO{
-			Name:          name,
-			Namespace:     namespace,
-			Replicas:      2,
-			ReadyReplicas: 2,
-			Labels:        map[string]string{"app": name},
-			Annotations:   map[string]string{},
-			Containers: []ContainerDetailDTO{
-				{
-					Name:          name,
-					Image:         "ghcr.io/eka-dev/chat-app-backend:latest",
-					Port:          func() *int32 { p := int32(3000); return &p }(),
-					CPURequest:    "250m",
-					CPULimit:      "500m",
-					MemoryRequest: "256Mi",
-					MemoryLimit:   "512Mi",
-					Env: []ContainerEnvVarDTO{
-						{Name: "PORT", Value: "3000"},
-						{Name: "APP_ENV", Value: "production"},
-					},
-					EnvFrom: []ContainerEnvFromDTO{
-						{Type: "secret", Name: "be-chat-app-env"},
-					},
-				},
-			},
-			CreatedAt: time.Now().Add(-18 * 24 * time.Hour),
-			Age:       "18d",
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	dep, err := s.clientMgr.Clientset.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -942,19 +825,7 @@ func (s *K8sService) UpdateDeployment(ctx context.Context, namespace, name strin
 	}
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		replicas := int32(2)
-		if req.Replicas != nil {
-			replicas = *req.Replicas
-		}
-		return &DeploymentDetailDTO{
-			Name:          name,
-			Namespace:     namespace,
-			Replicas:      replicas,
-			ReadyReplicas: replicas,
-			Containers:    req.Containers,
-			CreatedAt:     time.Now(),
-			Age:           "now",
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	existing, err := s.clientMgr.Clientset.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -1092,29 +963,7 @@ func (s *K8sService) CreateDeployment(ctx context.Context, req CreateDeploymentR
 	}
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		containers := []ContainerDetailDTO{
-			{
-				Name:          req.Name,
-				Image:         req.Image,
-				Port:          req.Port,
-				CPURequest:    req.CPURequest,
-				CPULimit:      req.CPULimit,
-				MemoryRequest: req.MemoryRequest,
-				MemoryLimit:   req.MemoryLimit,
-				Env:           req.Env,
-			},
-		}
-		return &DeploymentDetailDTO{
-			Name:          req.Name,
-			Namespace:     req.Namespace,
-			Replicas:      req.Replicas,
-			ReadyReplicas: req.Replicas,
-			Labels:        map[string]string{"app": req.Name, "app.kubernetes.io/managed-by": "kubenexus"},
-			Annotations:   map[string]string{"kubenexus.io/deployment-style": "cloud-run"},
-			Containers:    containers,
-			CreatedAt:     time.Now(),
-			Age:           "just now",
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	// Prepare container
@@ -1291,32 +1140,7 @@ func (s *K8sService) GetDeploymentPods(ctx context.Context, namespace, name stri
 	}
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return []PodItemDTO{
-			{
-				Name:       fmt.Sprintf("%s-7d8b9f-1a2b", name),
-				Namespace:  namespace,
-				Phase:      "Running",
-				Ready:      "1/1",
-				Restarts:   0,
-				Node:       "worker-node-1",
-				IP:         "10.42.0.88",
-				Containers: []string{name},
-				CreatedAt:  time.Now().Add(-2 * time.Hour),
-				Age:        "2h",
-			},
-			{
-				Name:       fmt.Sprintf("%s-7d8b9f-3c4d", name),
-				Namespace:  namespace,
-				Phase:      "Running",
-				Ready:      "1/1",
-				Restarts:   1,
-				Node:       "worker-node-2",
-				IP:         "10.42.0.89",
-				Containers: []string{name},
-				CreatedAt:  time.Now().Add(-2 * time.Hour),
-				Age:        "2h",
-			},
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	dep, err := s.clientMgr.Clientset.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -1352,20 +1176,7 @@ func (s *K8sService) GetPodLogs(ctx context.Context, namespace, podName, contain
 	}
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		mockLogs := fmt.Sprintf("[%s] INFO Starting application in %s mode...\n[%s] INFO Initializing database connections...\n[%s] INFO Application listening on port 8080\n[%s] INFO Ready to handle incoming HTTP requests.",
-			time.Now().Add(-5*time.Minute).Format(time.RFC3339),
-			"production",
-			time.Now().Add(-4*time.Minute).Format(time.RFC3339),
-			time.Now().Add(-3*time.Minute).Format(time.RFC3339),
-			time.Now().Add(-2*time.Minute).Format(time.RFC3339),
-		)
-		return &PodLogsResponseDTO{
-			Pod:       podName,
-			Container: container,
-			Namespace: namespace,
-			Logs:      mockLogs,
-			LineCount: 4,
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	// If container is empty, inspect pod to get first container
@@ -1423,7 +1234,7 @@ func (s *K8sService) GetPodLogs(ctx context.Context, namespace, podName, contain
 // ListServices lists Kubernetes Services in a namespace.
 func (s *K8sService) ListServices(ctx context.Context, namespace string) ([]ServiceItemDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return []ServiceItemDTO{}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	services, err := s.clientMgr.Clientset.CoreV1().Services(namespace).List(ctx, metav1.ListOptions{})
@@ -1475,7 +1286,7 @@ func (s *K8sService) ListServices(ctx context.Context, namespace string) ([]Serv
 // GetService gets detailed information for a specific Service.
 func (s *K8sService) GetService(ctx context.Context, namespace, name string) (*ServiceDetailDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return nil, errors.NotFound("Kubernetes cluster not connected")
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	svc, err := s.clientMgr.Clientset.CoreV1().Services(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -1523,7 +1334,7 @@ func (s *K8sService) GetService(ctx context.Context, namespace, name string) (*S
 // ListIngresses lists Ingress resources in a namespace.
 func (s *K8sService) ListIngresses(ctx context.Context, namespace string) ([]IngressItemDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return []IngressItemDTO{}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	ingresses, err := s.clientMgr.Clientset.NetworkingV1().Ingresses(namespace).List(ctx, metav1.ListOptions{})
@@ -1599,7 +1410,7 @@ func (s *K8sService) ListIngresses(ctx context.Context, namespace string) ([]Ing
 // GetIngress gets detailed information for a specific Ingress.
 func (s *K8sService) GetIngress(ctx context.Context, namespace, name string) (*IngressItemDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return nil, errors.NotFound("Kubernetes cluster not connected")
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	ing, err := s.clientMgr.Clientset.NetworkingV1().Ingresses(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -1669,7 +1480,7 @@ func (s *K8sService) GetIngress(ctx context.Context, namespace, name string) (*I
 // ListCronJobs lists CronJobs in a namespace.
 func (s *K8sService) ListCronJobs(ctx context.Context, namespace string) ([]CronJobItemDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return []CronJobItemDTO{}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	cronjobs, err := s.clientMgr.Clientset.BatchV1().CronJobs(namespace).List(ctx, metav1.ListOptions{})
@@ -1718,7 +1529,7 @@ func (s *K8sService) ListCronJobs(ctx context.Context, namespace string) ([]Cron
 // GetCronJob gets detailed information for a specific CronJob.
 func (s *K8sService) GetCronJob(ctx context.Context, namespace, name string) (*CronJobDetailDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return nil, errors.NotFound("Kubernetes cluster not connected")
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	cj, err := s.clientMgr.Clientset.BatchV1().CronJobs(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -1792,7 +1603,7 @@ func (s *K8sService) GetCronJob(ctx context.Context, namespace, name string) (*C
 // UpdateCronJob updates an existing CronJob.
 func (s *K8sService) UpdateCronJob(ctx context.Context, namespace, name string, req UpdateCronJobRequest) (*CronJobDetailDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return nil, errors.NotFound("Kubernetes cluster not connected")
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	cj, err := s.clientMgr.Clientset.BatchV1().CronJobs(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -1838,7 +1649,7 @@ func (s *K8sService) UpdateCronJob(ctx context.Context, namespace, name string, 
 // ToggleSuspendCronJob toggles the suspend status of a CronJob.
 func (s *K8sService) ToggleSuspendCronJob(ctx context.Context, namespace, name string) (bool, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return false, errors.NotFound("Kubernetes cluster not connected")
+		return false, fmt.Errorf("kubernetes client not connected")
 	}
 
 	cj, err := s.clientMgr.Clientset.BatchV1().CronJobs(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -1865,7 +1676,7 @@ func (s *K8sService) ToggleSuspendCronJob(ctx context.Context, namespace, name s
 // TriggerCronJobNow instantiates a manual Job from a CronJob immediately.
 func (s *K8sService) TriggerCronJobNow(ctx context.Context, namespace, name string) (*JobItemDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return nil, errors.NotFound("Kubernetes cluster not connected")
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	cj, err := s.clientMgr.Clientset.BatchV1().CronJobs(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -1924,7 +1735,7 @@ func (s *K8sService) TriggerCronJobNow(ctx context.Context, namespace, name stri
 // GetCronJobJobs gets recent execution Jobs spawned by a CronJob.
 func (s *K8sService) GetCronJobJobs(ctx context.Context, namespace, name string) ([]JobItemDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return []JobItemDTO{}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	jobs, err := s.clientMgr.Clientset.BatchV1().Jobs(namespace).List(ctx, metav1.ListOptions{})
@@ -2004,7 +1815,7 @@ func (s *K8sService) GetCronJobJobs(ctx context.Context, namespace, name string)
 // DeleteCronJob deletes a CronJob.
 func (s *K8sService) DeleteCronJob(ctx context.Context, namespace, name string) error {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return errors.NotFound("Kubernetes cluster not connected")
+		return fmt.Errorf("kubernetes client not connected")
 	}
 
 	err := s.clientMgr.Clientset.BatchV1().CronJobs(namespace).Delete(ctx, name, metav1.DeleteOptions{})
@@ -2017,7 +1828,7 @@ func (s *K8sService) DeleteCronJob(ctx context.Context, namespace, name string) 
 // CreateCronJob creates a new CronJob.
 func (s *K8sService) CreateCronJob(ctx context.Context, req CreateCronJobRequest) (*CronJobDetailDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return nil, errors.NotFound("Kubernetes cluster not connected")
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	var containers []corev1.Container
@@ -2092,117 +1903,7 @@ func formatAge(t time.Time) string {
 	return fmt.Sprintf("%dm", int(d.Minutes()))
 }
 
-// Mock helpers for demo mode when offline
-func getMockSecrets(namespace string) []SecretItemDTO {
-	return []SecretItemDTO{
-		{
-			Name:      "be-chat-app-env",
-			Namespace: namespace,
-			Type:      "Opaque",
-			KeyCount:  38,
-			Keys:      []string{"APP_NAME", "APP_VERSION", "DATABASE_HOST", "DATABASE_PASSWORD", "MINIO_SECRET_KEY"},
-			CreatedAt: time.Now().Add(-18 * 24 * time.Hour),
-			Age:       "18d",
-		},
-		{
-			Name:      "be-chat-app-tls",
-			Namespace: namespace,
-			Type:      "kubernetes.io/tls",
-			KeyCount:  2,
-			Keys:      []string{"tls.crt", "tls.key"},
-			CreatedAt: time.Now().Add(-19 * 24 * time.Hour),
-			Age:       "19d",
-		},
-	}
-}
 
-func getMockSecretDetail(namespace, name string) (*SecretDetailDTO, error) {
-	// Sample based on user's exact provided Secret!
-	decoded := map[string]string{
-		"APP_NAME":                     "Chat-App",
-		"APP_VERSION":                  "1.0.0",
-		"CORS_ORIGINS":                 `["http://localhost:5173", "https://chat-app.eka-dev.cloud"]`,
-		"DATABASE_HOST":                "103.150.226.122",
-		"DATABASE_NAME":                "chat-app",
-		"DATABASE_PASSWORD":            "postgres",
-		"DATABASE_PORT":                "54321",
-		"DATABASE_URL":                 "postgresql://postgres:postgres@103.150.226.122:54321/chat-app",
-		"DATABASE_USER":                "postgres",
-		"DEBUG":                        "False",
-		"ENABLE_RABBITMQ":              "false",
-		"GOOGLE_CLIENT_ID":             "897905079551-spocso10fecnvk87ops09hsefjehmnai.apps.googleusercontent.com",
-		"GOOGLE_CLIENT_SECRET":         "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",
-		"GOOGLE_CLIENT_URL":            "https://chat-app.eka-dev.cloud",
-		"MINIO_ACCESS_KEY":             "eka_vps",
-		"MINIO_BUCKET":                 "project",
-		"MINIO_ENDPOINT":               "minio:9000",
-		"MINIO_PUBLIC_URL":             "https://storage.eka-dev.cloud",
-		"MINIO_SECRET_KEY":             "ekasyafrinonazhifan31",
-		"MINIO_USE_SSL":                "False",
-		"OTEL_EXPORTER_OTLP_ENDPOINT":  "http://alloy.observability.svc.cluster.local:4317",
-		"OTEL_EXPORTER_OTLP_PROTOCOL":  "grpc",
-		"OTEL_LOGS_EXPORTER":           "none",
-		"OTEL_METRICS_EXPORTER":        "none",
-		"OTEL_SERVICE_NAME":            "chat-app-backend",
-		"OTEL_TRACES_EXPORTER":         "otlp",
-		"OTEL_TRACES_SAMPLER":          "parentbased_traceidratio",
-		"OTEL_TRACES_SAMPLER_ARG":      "0.2",
-		"RABBITMQ_HOST":                "localhost",
-		"RABBITMQ_PASSWORD":            "eka123",
-		"RABBITMQ_PORT":                "5672",
-		"RABBITMQ_USER":                "eka",
-		"RABBITMQ_VHOST":               "/",
-		"REDIS_DB":                     "0",
-		"REDIS_HOST":                   "103.150.226.122",
-		"REDIS_PASSWORD":               "ekasyafrino",
-		"REDIS_PORT":                   "6379",
-		"REDIS_USERNAME":               "default",
-	}
-
-	raw := make(map[string]string)
-	for k, v := range decoded {
-		raw[k] = base64.StdEncoding.EncodeToString([]byte(v))
-	}
-
-	return &SecretDetailDTO{
-		Name:            name,
-		Namespace:       namespace,
-		Type:            string(corev1.SecretTypeOpaque),
-		Data:            decoded,
-		RawData:         raw,
-		ResourceVersion: "32009244",
-		UID:             "cf023f1c-bb4f-488a-8f48-8bfc99a3292c",
-		CreatedAt:       time.Now().Add(-18 * 24 * time.Hour),
-	}, nil
-}
-
-func getMockConfigMaps(namespace string) []ConfigMapItemDTO {
-	return []ConfigMapItemDTO{
-		{
-			Name:      "app-config",
-			Namespace: namespace,
-			KeyCount:  3,
-			Keys:      []string{"CONFIG_ENV", "LOG_FORMAT", "SERVER_PORT"},
-			CreatedAt: time.Now().Add(-20 * 24 * time.Hour),
-			Age:       "20d",
-		},
-	}
-}
-
-func getMockConfigMapDetail(namespace, name string) (*ConfigMapDetailDTO, error) {
-	return &ConfigMapDetailDTO{
-		Name:      name,
-		Namespace: namespace,
-		Data: map[string]string{
-			"CONFIG_ENV":  "production",
-			"LOG_FORMAT":  "json",
-			"SERVER_PORT": "8080",
-		},
-		ResourceVersion: "12345",
-		UID:             "simulated-cm-uid",
-		CreatedAt:       time.Now().Add(-20 * 24 * time.Hour),
-	}, nil
-}
 
 // StartWatchers runs background goroutines listening to Kubernetes API server resource events.
 func (s *K8sService) StartWatchers(ctx context.Context) {
@@ -2288,7 +1989,7 @@ func (s *K8sService) watchResource(ctx context.Context, resType string, factory 
 // ScaleDeployment updates the replica count of a deployment.
 func (s *K8sService) ScaleDeployment(ctx context.Context, namespace, name string, replicas int32) (*DeploymentDetailDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return nil, errors.NotFound("Kubernetes cluster not connected")
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	scale, err := s.clientMgr.Clientset.AppsV1().Deployments(namespace).GetScale(ctx, name, metav1.GetOptions{})
@@ -2309,7 +2010,7 @@ func (s *K8sService) ScaleDeployment(ctx context.Context, namespace, name string
 // ListEvents lists recent cluster events in a namespace.
 func (s *K8sService) ListEvents(ctx context.Context, namespace string) ([]EventItemDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return []EventItemDTO{}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	events, err := s.clientMgr.Clientset.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{})
@@ -2354,7 +2055,7 @@ func (s *K8sService) ListEvents(ctx context.Context, namespace string) ([]EventI
 // ListPVCs lists PersistentVolumeClaims in a namespace.
 func (s *K8sService) ListPVCs(ctx context.Context, namespace string) ([]PVCItemDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return []PVCItemDTO{}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	pvcs, err := s.clientMgr.Clientset.CoreV1().PersistentVolumeClaims(namespace).List(ctx, metav1.ListOptions{})
@@ -2404,7 +2105,7 @@ func (s *K8sService) ListPVCs(ctx context.Context, namespace string) ([]PVCItemD
 // ListPVs lists all PersistentVolumes in the cluster.
 func (s *K8sService) ListPVs(ctx context.Context) ([]PVItemDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return []PVItemDTO{}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	pvs, err := s.clientMgr.Clientset.CoreV1().PersistentVolumes().List(ctx, metav1.ListOptions{})
@@ -2487,49 +2188,9 @@ func (s *K8sService) ApplyYAML(ctx context.Context, yamlStr string, defaultNames
 		Results: make([]AppliedResourceDTO, 0),
 	}
 
-	// If offline or clientset not connected, provide mock success for demonstration
+
 	if !s.clientMgr.Connected || s.clientMgr.DynamicClient == nil || s.clientMgr.RESTMapper == nil {
-		dec := yaml.NewYAMLOrJSONDecoder(strings.NewReader(yamlStr), 4096)
-		for {
-			var obj unstructured.Unstructured
-			err := dec.Decode(&obj)
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				continue
-			}
-			if obj.Object == nil || len(obj.Object) == 0 {
-				continue
-			}
-			ns := obj.GetNamespace()
-			if ns == "" {
-				ns = defaultNamespace
-				if ns == "" {
-					ns = "default"
-				}
-			}
-			action := "created"
-			if dryRun {
-				action = "dry-run validated"
-			}
-			resDTO := AppliedResourceDTO{
-				APIVersion: obj.GetAPIVersion(),
-				Kind:       obj.GetKind(),
-				Namespace:  ns,
-				Name:       obj.GetName(),
-				Action:     action,
-				Status:     "success",
-				Message:    fmt.Sprintf("Resource %s/%s %s successfully (demo mode)", obj.GetKind(), obj.GetName(), action),
-			}
-			result.Results = append(result.Results, resDTO)
-			result.SuccessCount++
-			result.Total++
-		}
-		if result.Total == 0 {
-			return nil, errors.BadRequest("No valid Kubernetes resources found in YAML")
-		}
-		return result, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	decoder := yaml.NewYAMLOrJSONDecoder(strings.NewReader(yamlStr), 4096)
@@ -2750,56 +2411,7 @@ func formatPodItem(p corev1.Pod) PodItemDTO {
 // ListNodes lists all nodes in the cluster with hardware capacity and status.
 func (s *K8sService) ListNodes(ctx context.Context) ([]NodeDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return []NodeDTO{
-			{
-				Name:              "k8s-control-plane-01",
-				Status:            "Ready",
-				Roles:             []string{"control-plane", "master"},
-				Version:           "v1.32.2",
-				OSImage:           "Ubuntu 24.04.1 LTS",
-				KernelVersion:     "6.6.0-k8s-generic",
-				ContainerRuntime:  "containerd://1.7.20",
-				InternalIP:        "103.150.226.122",
-				ExternalIP:        "103.150.226.122",
-				CPUCapacity:       "4 cores",
-				CPUAllocatable:    "3800m",
-				MemoryCapacity:    "16 GiB",
-				MemoryAllocatable: "15.2 GiB",
-				PodsCapacity:      110,
-				PodsAllocatable:   110,
-				Conditions: []NodeConditionDTO{
-					{Type: "Ready", Status: "True", Message: "kubelet is posting ready status"},
-					{Type: "MemoryPressure", Status: "False"},
-					{Type: "DiskPressure", Status: "False"},
-				},
-				CreatedAt: time.Now().Add(-180 * 24 * time.Hour),
-				Age:       "180d",
-			},
-			{
-				Name:              "k8s-worker-node-01",
-				Status:            "Ready",
-				Roles:             []string{"worker"},
-				Version:           "v1.32.2",
-				OSImage:           "Ubuntu 24.04.1 LTS",
-				KernelVersion:     "6.6.0-k8s-generic",
-				ContainerRuntime:  "containerd://1.7.20",
-				InternalIP:        "103.150.226.123",
-				ExternalIP:        "103.150.226.123",
-				CPUCapacity:       "8 cores",
-				CPUAllocatable:    "7600m",
-				MemoryCapacity:    "32 GiB",
-				MemoryAllocatable: "30.5 GiB",
-				PodsCapacity:      110,
-				PodsAllocatable:   110,
-				Conditions: []NodeConditionDTO{
-					{Type: "Ready", Status: "True", Message: "kubelet is posting ready status"},
-					{Type: "MemoryPressure", Status: "False"},
-					{Type: "DiskPressure", Status: "False"},
-				},
-				CreatedAt: time.Now().Add(-180 * 24 * time.Hour),
-				Age:       "180d",
-			},
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	nodeList, err := s.clientMgr.Clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
@@ -2927,17 +2539,7 @@ func (s *K8sService) GetClusterOverview(ctx context.Context) (*ClusterOverviewDT
 	}
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		overview.ActivePodsCount = 14
-		overview.DeploymentsCount = 5
-		overview.StatefulSetsCount = 2
-		overview.DaemonSetsCount = 2
-		overview.ServicesCount = 8
-		overview.IngressesCount = 3
-		overview.PVCsCount = 4
-		overview.PVsCount = 4
-		overview.NamespacesCount = 4
-		overview.CronJobsCount = 3
-		return overview, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	// Active Pods
@@ -3015,11 +2617,7 @@ func (s *K8sService) GetClusterOverview(ctx context.Context) (*ClusterOverviewDT
 // ListPods returns all pods across namespaces or in a specific namespace.
 func (s *K8sService) ListPods(ctx context.Context, namespace string) ([]PodItemDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return []PodItemDTO{
-			{Name: "be-ftracker-6d7b89-a1b2", Namespace: "f-tracker", Phase: "Running", StatusReason: "Running", Ready: "1/1", Restarts: 0, Node: "k8s-worker-node-01", IP: "10.42.0.88", Containers: []string{"be-ftracker"}, CreatedAt: time.Now().Add(-4 * time.Hour), Age: "4h"},
-			{Name: "f-tracker-5c8f9b-c3d4", Namespace: "f-tracker", Phase: "Running", StatusReason: "Running", Ready: "1/1", Restarts: 0, Node: "k8s-worker-node-01", IP: "10.42.0.89", Containers: []string{"f-tracker"}, CreatedAt: time.Now().Add(-4 * time.Hour), Age: "4h"},
-			{Name: "worker-ftracker-7f9a1b-e5f6", Namespace: "f-tracker", Phase: "Running", StatusReason: "Running", Ready: "1/1", Restarts: 1, Node: "k8s-worker-node-01", IP: "10.42.0.90", Containers: []string{"worker-ftracker"}, CreatedAt: time.Now().Add(-4 * time.Hour), Age: "4h"},
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	podList, err := s.clientMgr.Clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
@@ -3046,8 +2644,7 @@ func (s *K8sService) DeletePod(ctx context.Context, namespace, name string) erro
 	}
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		s.BroadcastK8sChange("pod", "deleted", namespace, name)
-		return nil
+		return fmt.Errorf("kubernetes client not connected")
 	}
 
 	err := s.clientMgr.Clientset.CoreV1().Pods(namespace).Delete(ctx, name, metav1.DeleteOptions{})
@@ -3065,10 +2662,7 @@ func (s *K8sService) DeletePod(ctx context.Context, namespace, name string) erro
 // ListStatefulSets lists all StatefulSets in a namespace.
 func (s *K8sService) ListStatefulSets(ctx context.Context, namespace string) ([]StatefulSetItemDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return []StatefulSetItemDTO{
-			{Name: "redis-cluster", Namespace: "default", Replicas: 3, ReadyReplicas: 3, CurrentReplicas: 3, Images: []string{"redis:7.2-alpine"}, Labels: map[string]string{"app": "redis"}, CreatedAt: time.Now().Add(-48 * time.Hour), Age: "2d"},
-			{Name: "postgresql-ha", Namespace: "default", Replicas: 2, ReadyReplicas: 2, CurrentReplicas: 2, Images: []string{"postgres:16-alpine"}, Labels: map[string]string{"app": "postgres"}, CreatedAt: time.Now().Add(-72 * time.Hour), Age: "3d"},
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	ssList, err := s.clientMgr.Clientset.AppsV1().StatefulSets(namespace).List(ctx, metav1.ListOptions{})
@@ -3113,8 +2707,7 @@ func (s *K8sService) ScaleStatefulSet(ctx context.Context, namespace, name strin
 		namespace = "default"
 	}
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		s.BroadcastK8sChange("statefulset", "scaled", namespace, name)
-		return nil
+		return fmt.Errorf("kubernetes client not connected")
 	}
 
 	ss, err := s.clientMgr.Clientset.AppsV1().StatefulSets(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -3141,8 +2734,7 @@ func (s *K8sService) RolloutRestartStatefulSet(ctx context.Context, namespace, n
 		namespace = "default"
 	}
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		s.BroadcastK8sChange("statefulset", "restarted", namespace, name)
-		return nil
+		return fmt.Errorf("kubernetes client not connected")
 	}
 
 	patchData := fmt.Sprintf(`{"spec":{"template":{"metadata":{"annotations":{"kubectl.kubernetes.io/restartedAt":"%s"}}}}}`, time.Now().Format(time.RFC3339))
@@ -3158,10 +2750,7 @@ func (s *K8sService) RolloutRestartStatefulSet(ctx context.Context, namespace, n
 // ListDaemonSets lists all DaemonSets in a namespace.
 func (s *K8sService) ListDaemonSets(ctx context.Context, namespace string) ([]DaemonSetItemDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return []DaemonSetItemDTO{
-			{Name: "kube-flannel-ds", Namespace: "kube-system", DesiredNumberScheduled: 2, CurrentNumberScheduled: 2, NumberReady: 2, NumberAvailable: 2, Images: []string{"flannel/flannel:v0.25.1"}, Labels: map[string]string{"app": "flannel"}, CreatedAt: time.Now().Add(-180 * 24 * time.Hour), Age: "180d"},
-			{Name: "node-exporter", Namespace: "monitoring", DesiredNumberScheduled: 2, CurrentNumberScheduled: 2, NumberReady: 2, NumberAvailable: 2, Images: []string{"prom/node-exporter:v1.8.0"}, Labels: map[string]string{"app": "node-exporter"}, CreatedAt: time.Now().Add(-90 * 24 * time.Hour), Age: "90d"},
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	dsList, err := s.clientMgr.Clientset.AppsV1().DaemonSets(namespace).List(ctx, metav1.ListOptions{})
@@ -3203,8 +2792,7 @@ func (s *K8sService) RolloutRestartDaemonSet(ctx context.Context, namespace, nam
 		namespace = "default"
 	}
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		s.BroadcastK8sChange("daemonset", "restarted", namespace, name)
-		return nil
+		return fmt.Errorf("kubernetes client not connected")
 	}
 
 	patchData := fmt.Sprintf(`{"spec":{"template":{"metadata":{"annotations":{"kubectl.kubernetes.io/restartedAt":"%s"}}}}}`, time.Now().Format(time.RFC3339))
@@ -3220,15 +2808,7 @@ func (s *K8sService) RolloutRestartDaemonSet(ctx context.Context, namespace, nam
 // GetResourceYAML fetches live Kubernetes resource manifest serialized into clean YAML.
 func (s *K8sService) GetResourceYAML(ctx context.Context, kind, namespace, name string) (*ResourceYAMLResponseDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.DynamicClient == nil || s.clientMgr.RESTMapper == nil {
-		// Mock YAML in demo mode
-		mockYaml := fmt.Sprintf("apiVersion: apps/v1\nkind: %s\nmetadata:\n  name: %s\n  namespace: %s\nspec:\n  replicas: 1\n", kind, name, namespace)
-		return &ResourceYAMLResponseDTO{
-			Kind:       kind,
-			Namespace:  namespace,
-			Name:       name,
-			APIVersion: "apps/v1",
-			YAML:       mockYaml,
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	// Guess GroupKind based on standard resources
@@ -3316,12 +2896,7 @@ func (s *K8sService) GetServiceEndpoints(ctx context.Context, namespace, name st
 	}
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		dto.Ports = append(dto.Ports, ServiceEndpointPortDTO{Name: "http", Port: 8080, Protocol: "TCP"})
-		dto.Targets = append(dto.Targets,
-			EndpointTargetDTO{IP: "10.42.0.88", PodName: "be-ftracker-6d7b89-a1b2", NodeName: "k8s-worker-node-01", Ready: true},
-			EndpointTargetDTO{IP: "10.42.0.89", PodName: "be-ftracker-6d7b89-c3d4", NodeName: "k8s-worker-node-02", Ready: true},
-		)
-		return dto, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	ep, err := s.clientMgr.Clientset.CoreV1().Endpoints(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -3502,14 +3077,7 @@ func (s *K8sService) CreateNamespace(ctx context.Context, req *CreateNamespaceRe
 		}, nil
 	}
 
-	// Demo fallback
-	s.BroadcastK8sChange("namespace", "create", name, name)
-	return &NamespaceDTO{
-		Name:      name,
-		Status:    "Active",
-		CreatedAt: time.Now(),
-		Age:       "0s",
-	}, nil
+	return nil, fmt.Errorf("kubernetes client not connected")
 }
 
 // DeleteNamespace terminates a namespace.
@@ -3539,20 +3107,7 @@ func (s *K8sService) GetResourceQuotas(ctx context.Context, namespace string) ([
 	results := make([]ResourceQuotaItemDTO, 0)
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return []ResourceQuotaItemDTO{
-			{
-				Name:        "compute-resources",
-				Namespace:   namespace,
-				CPULimit:    "4",
-				CPUUsed:     "1.2",
-				MemoryLimit: "8Gi",
-				MemoryUsed:  "2.4Gi",
-				PodsLimit:   "20",
-				PodsUsed:    "6",
-				Age:         "14d",
-				CreatedAt:   time.Now().Add(-14 * 24 * time.Hour),
-			},
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	qList, err := s.clientMgr.Clientset.CoreV1().ResourceQuotas(namespace).List(ctx, metav1.ListOptions{})
@@ -3619,12 +3174,7 @@ func (s *K8sService) ListClusterEvents(ctx context.Context, namespace, eventType
 	events := make([]EventItemDTO, 0)
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		return []EventItemDTO{
-			{Type: "Warning", Reason: "FailedScheduling", Message: "0/1 nodes are available: 1 node(s) had untolerated taint.", InvolvedObject: "Pod/backend-worker-7d", Count: 3, Age: "12m", FirstTime: time.Now().Add(-12 * time.Minute), LastTime: time.Now().Add(-2 * time.Minute)},
-			{Type: "Normal", Reason: "Scheduled", Message: "Successfully assigned default/redis-0 to eka-dev", InvolvedObject: "Pod/redis-0", Count: 1, Age: "25m", FirstTime: time.Now().Add(-25 * time.Minute), LastTime: time.Now().Add(-25 * time.Minute)},
-			{Type: "Normal", Reason: "Pulled", Message: "Container image 'redis:7-alpine' already present on machine", InvolvedObject: "Pod/redis-0", Count: 1, Age: "25m", FirstTime: time.Now().Add(-25 * time.Minute), LastTime: time.Now().Add(-25 * time.Minute)},
-			{Type: "Warning", Reason: "BackOff", Message: "Back-off restarting failed container worker in pod analytics-batch-89", InvolvedObject: "Pod/analytics-batch-89", Count: 8, Age: "5m", FirstTime: time.Now().Add(-30 * time.Minute), LastTime: time.Now().Add(-1 * time.Minute)},
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	opts := metav1.ListOptions{}
@@ -3760,24 +3310,7 @@ func (s *K8sService) ListHPAs(ctx context.Context, namespace string) ([]HPAItemD
 	}
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		targetCPU := int32(80)
-		currentCPU := int32(35)
-		return []HPAItemDTO{
-			{
-				Name:            "be-chat-app-hpa",
-				Namespace:       namespace,
-				TargetKind:      "Deployment",
-				TargetName:      "be-chat-app",
-				MinReplicas:     1,
-				MaxReplicas:     5,
-				CurrentReplicas: 2,
-				DesiredReplicas: 2,
-				TargetCPU:       &targetCPU,
-				CurrentCPU:      &currentCPU,
-				Age:             "18d",
-				CreatedAt:       time.Now().Add(-18 * 24 * time.Hour),
-			},
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	list, err := s.clientMgr.Clientset.AutoscalingV2().HorizontalPodAutoscalers(namespace).List(ctx, metav1.ListOptions{})
@@ -3800,23 +3333,7 @@ func (s *K8sService) ListHPAs(ctx context.Context, namespace string) ([]HPAItemD
 // GetHPA fetches full details of an HPA by namespace and name.
 func (s *K8sService) GetHPA(ctx context.Context, namespace, name string) (*HPADetailDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		targetCPU := int32(80)
-		currentCPU := int32(35)
-		return &HPADetailDTO{
-			Name:            name,
-			Namespace:       namespace,
-			TargetKind:      "Deployment",
-			TargetName:      "be-chat-app",
-			MinReplicas:     1,
-			MaxReplicas:     5,
-			CurrentReplicas: 2,
-			DesiredReplicas: 2,
-			TargetCPU:       &targetCPU,
-			CurrentCPU:      &currentCPU,
-			Conditions:      []HPAConditionDTO{},
-			Age:             "18d",
-			CreatedAt:       time.Now().Add(-18 * 24 * time.Hour),
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	hpa, err := s.clientMgr.Clientset.AutoscalingV2().HorizontalPodAutoscalers(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -3834,26 +3351,7 @@ func (s *K8sService) GetHPA(ctx context.Context, namespace, name string) (*HPADe
 // GetHPAForWorkload searches for an HPA targeting a specific workload (e.g. Deployment or StatefulSet).
 func (s *K8sService) GetHPAForWorkload(ctx context.Context, namespace, kind, name string) (*HPADetailDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		if name == "be-chat-app" {
-			targetCPU := int32(80)
-			currentCPU := int32(35)
-			return &HPADetailDTO{
-				Name:            "be-chat-app-hpa",
-				Namespace:       namespace,
-				TargetKind:      "Deployment",
-				TargetName:      name,
-				MinReplicas:     1,
-				MaxReplicas:     5,
-				CurrentReplicas: 2,
-				DesiredReplicas: 2,
-				TargetCPU:       &targetCPU,
-				CurrentCPU:      &currentCPU,
-				Conditions:      []HPAConditionDTO{},
-				Age:             "18d",
-				CreatedAt:       time.Now().Add(-18 * 24 * time.Hour),
-			}, nil
-		}
-		return nil, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	list, err := s.clientMgr.Clientset.AutoscalingV2().HorizontalPodAutoscalers(namespace).List(ctx, metav1.ListOptions{})
@@ -3890,22 +3388,7 @@ func (s *K8sService) SaveHPA(ctx context.Context, req SaveHPARequest) (*HPADetai
 	}
 
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		s.BroadcastK8sChange("hpa", "saved", req.Namespace, name)
-		return &HPADetailDTO{
-			Name:            name,
-			Namespace:       req.Namespace,
-			TargetKind:      req.TargetKind,
-			TargetName:      req.TargetName,
-			MinReplicas:     req.MinReplicas,
-			MaxReplicas:     req.MaxReplicas,
-			CurrentReplicas: req.MinReplicas,
-			DesiredReplicas: req.MinReplicas,
-			TargetCPU:       req.TargetCPU,
-			TargetMemory:    req.TargetMemory,
-			Conditions:      []HPAConditionDTO{},
-			Age:             "0s",
-			CreatedAt:       time.Now(),
-		}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	var metrics []autoscalingv2.MetricSpec
@@ -3991,8 +3474,7 @@ func (s *K8sService) SaveHPA(ctx context.Context, req SaveHPARequest) (*HPADetai
 // DeleteHPA deletes an HPA by name in the specified namespace.
 func (s *K8sService) DeleteHPA(ctx context.Context, namespace, name string) error {
 	if !s.clientMgr.Connected || s.clientMgr.Clientset == nil {
-		s.BroadcastK8sChange("hpa", "deleted", namespace, name)
-		return nil
+		return fmt.Errorf("kubernetes client not connected")
 	}
 
 	err := s.clientMgr.Clientset.AutoscalingV2().HorizontalPodAutoscalers(namespace).Delete(ctx, name, metav1.DeleteOptions{})
@@ -4082,7 +3564,7 @@ func unstructuredToKedaHTTPDTO(u *unstructured.Unstructured) KedaHTTPScaledObjec
 // ListKedaHTTPScaledObjects lists all HTTPScaledObjects in a namespace.
 func (s *K8sService) ListKedaHTTPScaledObjects(ctx context.Context, namespace string) ([]KedaHTTPScaledObjectDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.DynamicClient == nil {
-		return []KedaHTTPScaledObjectDTO{}, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	list, err := s.clientMgr.DynamicClient.Resource(kedaHTTPGVR).Namespace(namespace).List(ctx, metav1.ListOptions{})
@@ -4103,7 +3585,7 @@ func (s *K8sService) ListKedaHTTPScaledObjects(ctx context.Context, namespace st
 // GetKedaHTTPForWorkload searches for an HTTPScaledObject targeting a specific workload.
 func (s *K8sService) GetKedaHTTPForWorkload(ctx context.Context, namespace, kind, name string) (*KedaHTTPScaledObjectDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.DynamicClient == nil {
-		return nil, nil
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	list, err := s.clientMgr.DynamicClient.Resource(kedaHTTPGVR).Namespace(namespace).List(ctx, metav1.ListOptions{})
@@ -4150,7 +3632,7 @@ func (s *K8sService) GetWorkloadAutoscaler(ctx context.Context, namespace, kind,
 // SaveKedaHTTP creates or updates an HTTPScaledObject.
 func (s *K8sService) SaveKedaHTTP(ctx context.Context, req SaveKedaHTTPRequest) (*KedaHTTPScaledObjectDTO, error) {
 	if !s.clientMgr.Connected || s.clientMgr.DynamicClient == nil {
-		return nil, errors.InternalError("Kubernetes dynamic client is not connected", nil)
+		return nil, fmt.Errorf("kubernetes client not connected")
 	}
 
 	name := req.Name
@@ -4270,8 +3752,7 @@ func (s *K8sService) SaveKedaHTTP(ctx context.Context, req SaveKedaHTTPRequest) 
 // DeleteKedaHTTP deletes an HTTPScaledObject by name.
 func (s *K8sService) DeleteKedaHTTP(ctx context.Context, namespace, name string) error {
 	if !s.clientMgr.Connected || s.clientMgr.DynamicClient == nil {
-		s.BroadcastK8sChange("keda-http", "deleted", namespace, name)
-		return nil
+		return fmt.Errorf("kubernetes client not connected")
 	}
 
 	err := s.clientMgr.DynamicClient.Resource(kedaHTTPGVR).Namespace(namespace).Delete(ctx, name, metav1.DeleteOptions{})
